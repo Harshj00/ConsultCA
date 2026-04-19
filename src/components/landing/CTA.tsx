@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
 
@@ -6,7 +7,6 @@ export const CTA = () => {
     <section className="py-20 md:py-28 bg-background">
       <div className="container">
         <div className="relative overflow-hidden rounded-2xl bg-gradient-primary p-8 md:p-14 lg:p-20 text-center">
-          {/* subtle accent glow */}
           <div className="absolute -top-24 -right-24 h-64 w-64 rounded-full bg-accent/20 blur-3xl" />
           <div className="absolute -bottom-24 -left-24 h-64 w-64 rounded-full bg-accent/10 blur-3xl" />
 
@@ -20,16 +20,19 @@ export const CTA = () => {
               Join the CAs and CA students saving 10+ hours every week.
             </p>
             <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
-              <Button size="lg" className="w-full sm:w-auto bg-accent hover:bg-accent/90 text-accent-foreground group">
-                Start 7-day free trial
-                <ArrowRight className="h-4 w-4 transition-base group-hover:translate-x-0.5" />
+              <Button asChild size="lg" className="w-full sm:w-auto bg-accent hover:bg-accent/90 text-accent-foreground group">
+                <Link to="/auth">
+                  Start 7-day free trial
+                  <ArrowRight className="h-4 w-4 transition-base group-hover:translate-x-0.5" />
+                </Link>
               </Button>
               <Button
+                asChild
                 size="lg"
                 variant="outline"
                 className="w-full sm:w-auto border-primary-foreground/20 bg-transparent text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground"
               >
-                Talk to founder
+                <a href="#founder">Talk to founder</a>
               </Button>
             </div>
             <p className="mt-4 text-xs text-primary-foreground/50">

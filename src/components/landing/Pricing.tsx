@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Check } from "lucide-react";
 
@@ -89,12 +90,15 @@ export const Pricing = () => {
               </div>
 
               <Button
-                className={`mt-6 w-full ${
-                  t.highlight ? "bg-primary hover:bg-primary/90" : ""
-                }`}
+                asChild
+                className={`mt-6 w-full ${t.highlight ? "bg-primary hover:bg-primary/90" : ""}`}
                 variant={t.highlight ? "default" : "outline"}
               >
-                {t.cta}
+                {t.cta === "Contact sales" ? (
+                  <a href="#founder">{t.cta}</a>
+                ) : (
+                  <Link to="/auth">{t.cta}</Link>
+                )}
               </Button>
 
               <ul className="mt-6 space-y-3 border-t border-border pt-6">

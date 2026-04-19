@@ -1,10 +1,10 @@
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, CheckCircle2, FileText, Sparkles } from "lucide-react";
 
 export const Hero = () => {
   return (
     <section className="relative overflow-hidden bg-gradient-hero">
-      {/* subtle grid */}
       <div className="absolute inset-0 -z-10 opacity-[0.03] [background-image:linear-gradient(hsl(var(--primary))_1px,transparent_1px),linear-gradient(90deg,hsl(var(--primary))_1px,transparent_1px)] [background-size:48px_48px]" />
 
       <div className="container py-16 md:py-24 lg:py-32">
@@ -27,12 +27,14 @@ export const Hero = () => {
           </p>
 
           <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
-            <Button size="lg" className="w-full sm:w-auto bg-primary hover:bg-primary/90 shadow-soft group">
-              Start 7-day free trial
-              <ArrowRight className="h-4 w-4 transition-base group-hover:translate-x-0.5" />
+            <Button asChild size="lg" className="w-full sm:w-auto bg-primary hover:bg-primary/90 shadow-soft group">
+              <Link to="/auth">
+                Start 7-day free trial
+                <ArrowRight className="h-4 w-4 transition-base group-hover:translate-x-0.5" />
+              </Link>
             </Button>
-            <Button size="lg" variant="outline" className="w-full sm:w-auto">
-              See live demo
+            <Button asChild size="lg" variant="outline" className="w-full sm:w-auto">
+              <a href="#features">See how it works</a>
             </Button>
           </div>
 
@@ -43,7 +45,6 @@ export const Hero = () => {
           </ul>
         </div>
 
-        {/* Mock product preview */}
         <div className="mt-12 md:mt-20 mx-auto max-w-4xl animate-fade-in-up" style={{ animationDelay: "200ms" }}>
           <div className="relative rounded-xl border border-border bg-card shadow-premium overflow-hidden">
             <div className="flex items-center gap-1.5 border-b border-border bg-muted/40 px-4 py-2.5">

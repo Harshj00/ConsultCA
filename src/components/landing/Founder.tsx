@@ -30,7 +30,16 @@ export const Founder = () => {
                 <div className="mt-5 flex flex-col sm:flex-row gap-2 justify-center md:justify-start">
                   <button
                     type="button"
-                    onClick={() => { window.open("https://www.linkedin.com/in/harshgod/", "_blank", "noopener,noreferrer") || (window.top!.location.href = "https://www.linkedin.com/in/harshgod/"); }}
+                    onClick={() => {
+                      const popup = window.open("https://www.linkedin.com/in/harshgod/", "_blank", "noopener,noreferrer");
+                      if (!popup) {
+                        const link = document.createElement("a");
+                        link.href = "https://www.linkedin.com/in/harshgod/";
+                        link.target = "_blank";
+                        link.rel = "noopener noreferrer";
+                        link.click();
+                      }
+                    }}
                     className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary text-primary-foreground px-4 py-2.5 text-sm font-medium transition-base hover:bg-primary/90 shadow-soft cursor-pointer"
                   >
                     <Linkedin className="h-4 w-4" />

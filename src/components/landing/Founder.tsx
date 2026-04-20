@@ -24,7 +24,7 @@ export const Founder = () => {
                 <h3 className="font-display text-xl md:text-2xl font-bold text-primary">Harsh Kumar Jha</h3>
                 <p className="text-sm text-accent font-medium mt-0.5">Founder · TaxPilot AI</p>
                 <p className="mt-3 text-sm md:text-base text-muted-foreground leading-relaxed">
-                  3rd year B.Tech CSE student building AI tools for Indian professionals. I personally read every message, reply within 24 hours, and ship product feedback weekly. Have a feature request, a bug, or just want to chat about the product? Pick a channel below.
+                  I personally read every message, reply within 24 hours, and ship product feedback weekly. Have a feature request, a bug, or just want to chat about the product? Pick a channel below.
                 </p>
 
                 <div className="mt-5 flex flex-col sm:flex-row gap-2 justify-center md:justify-start">

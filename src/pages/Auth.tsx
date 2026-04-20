@@ -85,7 +85,11 @@ const Auth = () => {
     });
     setBusy(false);
     if (error) {
-      toast.error("Invalid email or password");
+      if (error.message.toLowerCase().includes("not confirmed") || error.message.toLowerCase().includes("not_confirmed")) {
+        toast.error("Please verify your email first. Check your inbox for the confirmation link.");
+      } else {
+        toast.error("Invalid email or password");
+      }
       return;
     }
     navigate("/app", { replace: true });

@@ -65,8 +65,10 @@ const Auth = () => {
       toast.error(error.message.includes("already registered") ? "Email already registered. Try signing in." : error.message);
       return;
     }
-    toast.success("Welcome to TaxPilot AI! Your 7-day trial has started.");
-    navigate("/app", { replace: true });
+    toast.success("Check your inbox! Click the verification link to activate your 7-day free trial.", { duration: 8000 });
+    setTab("signin");
+    setName("");
+    setSignupPassword("");
   };
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -83,7 +85,11 @@ const Auth = () => {
     });
     setBusy(false);
     if (error) {
-      toast.error("Invalid email or password");
+      if (error.message.toLowerCase().includes("not confirmed") || error.message.toLowerCase().includes("not_confirmed")) {
+        toast.error("Please verify your email first. Check your inbox for the confirmation link.");
+      } else {
+        toast.error("Invalid email or password");
+      }
       return;
     }
     navigate("/app", { replace: true });

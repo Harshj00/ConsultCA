@@ -1,12 +1,20 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { ChatInterface } from "@/components/app/ChatInterface";
-import { MessageSquare, FileWarning, Mail, Scale, Sparkles, LogOut, Menu, X, Crown } from "lucide-react";
+import { toast } from "sonner";
+import { MessageSquare, FileWarning, Mail, Scale, Sparkles, LogOut, Menu, X, Crown, Plus, Trash2 } from "lucide-react";
 
 type Tool = "qa" | "notice" | "email" | "caselaw";
+
+interface Conversation {
+  id: string;
+  tool: Tool;
+  title: string;
+  updated_at: string;
+}
 
 const TOOLS: { id: Tool; icon: typeof MessageSquare; label: string; title: string; placeholder: string; intro: string }[] = [
   {
@@ -45,10 +53,12 @@ const TOOLS: { id: Tool; icon: typeof MessageSquare; label: string; title: strin
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const { user, profile, subscription, signOut, refreshProfile } = useAuth();
+  const { user, profile, subscription, signOut } = useAuth();
   const [activeTool, setActiveTool] = useState<Tool>("qa");
   const [usageCount, setUsageCount] = useState<number>(0);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [activeConvId, setActiveConvId] = useState<string | null>(null);
 
   const fetchUsage = async () => {
     if (!user) return;
@@ -59,13 +69,57 @@ const Dashboard = () => {
     setUsageCount(count ?? 0);
   };
 
+  const fetchConversations = useCallback(async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .from("conversations")
+      .select("id, tool, title, updated_at")
+      .order("updated_at", { ascending: false })
+      .limit(50);
+    setConversations((data || []) as Conversation[]);
+  }, [user]);
+
   useEffect(() => {
     fetchUsage();
-  }, [user]);
+    fetchConversations();
+  }, [user, fetchConversations]);
 
   const handleSignOut = async () => {
     await signOut();
     navigate("/", { replace: true });
+  };
+
+  const handleNewChat = () => {
+    setActiveConvId(null);
+    setSidebarOpen(false);
+  };
+
+  const handleSelectConv = (conv: Conversation) => {
+    setActiveTool(conv.tool);
+    setActiveConvId(conv.id);
+    setSidebarOpen(false);
+  };
+
+  const handleToolSwitch = (id: Tool) => {
+    setActiveTool(id);
+    setActiveConvId(null);
+    setSidebarOpen(false);
+  };
+
+  const handleDeleteConv = async (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    const { error } = await supabase.from("conversations").delete().eq("id", id);
+    if (error) {
+      toast.error("Failed to delete chat");
+      return;
+    }
+    if (activeConvId === id) setActiveConvId(null);
+    setConversations((prev) => prev.filter((c) => c.id !== id));
+  };
+
+  const handleConversationCreated = (id: string) => {
+    setActiveConvId(id);
+    fetchConversations();
   };
 
   const isTrial = subscription?.tier === "trial";
@@ -74,6 +128,7 @@ const Dashboard = () => {
   const queriesLeft = Math.max(0, 25 - usageCount);
 
   const tool = TOOLS.find((t) => t.id === activeTool)!;
+  const recentConvs = conversations.filter((c) => c.tool === activeTool).slice(0, 20);
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
@@ -100,10 +155,7 @@ const Dashboard = () => {
           {TOOLS.map((t) => (
             <button
               key={t.id}
-              onClick={() => {
-                setActiveTool(t.id);
-                setSidebarOpen(false);
-              }}
+              onClick={() => handleToolSwitch(t.id)}
               className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-base ${
                 activeTool === t.id
                   ? "bg-primary text-primary-foreground"
@@ -114,6 +166,48 @@ const Dashboard = () => {
               {t.label}
             </button>
           ))}
+
+          <div className="flex items-center justify-between px-3 pt-5 pb-2">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Recent</p>
+            <button
+              onClick={handleNewChat}
+              className="inline-flex items-center gap-1 text-xs font-medium text-accent hover:text-accent/80 transition-base"
+              title="Start a new chat"
+            >
+              <Plus className="h-3.5 w-3.5" />
+              New
+            </button>
+          </div>
+
+          {recentConvs.length === 0 ? (
+            <p className="px-3 py-2 text-xs text-muted-foreground italic">No saved chats yet.</p>
+          ) : (
+            recentConvs.map((c) => (
+              <button
+                key={c.id}
+                onClick={() => handleSelectConv(c)}
+                className={`group w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-left transition-base ${
+                  activeConvId === c.id
+                    ? "bg-accent-soft text-primary"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                }`}
+              >
+                <span className="flex-1 truncate">{c.title}</span>
+                <span
+                  role="button"
+                  tabIndex={0}
+                  onClick={(e) => handleDeleteConv(e, c.id)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") handleDeleteConv(e as unknown as React.MouseEvent, c.id);
+                  }}
+                  className="opacity-0 group-hover:opacity-100 p-1 -mr-1 rounded hover:bg-destructive/10 hover:text-destructive transition-base cursor-pointer"
+                  title="Delete chat"
+                >
+                  <Trash2 className="h-3 w-3" />
+                </span>
+              </button>
+            ))
+          )}
         </nav>
 
         {/* Usage / trial card */}
@@ -167,14 +261,24 @@ const Dashboard = () => {
             <Menu className="h-5 w-5" />
           </button>
           <span className="text-sm font-semibold text-primary">{tool.label}</span>
-          <span className="w-7" />
+          <button
+            onClick={handleNewChat}
+            className="p-1.5 text-foreground"
+            title="New chat"
+          >
+            <Plus className="h-5 w-5" />
+          </button>
         </div>
 
         <ChatInterface
+          key={`${tool.id}-${activeConvId ?? "new"}`}
           tool={tool.id}
           title={tool.title}
           placeholder={tool.placeholder}
           intro={tool.intro}
+          conversationId={activeConvId}
+          onConversationCreated={handleConversationCreated}
+          onConversationUpdated={fetchConversations}
           onUsage={fetchUsage}
         />
       </div>

@@ -19,28 +19,86 @@ interface Props {
   title: string;
   placeholder: string;
   intro: string;
+  conversationId: string | null;
+  onConversationCreated: (id: string) => void;
+  onConversationUpdated?: () => void;
   onUsage?: () => void;
 }
 
-export const ChatInterface = ({ tool, title, placeholder, intro, onUsage }: Props) => {
-  const { session } = useAuth();
+export const ChatInterface = ({
+  tool,
+  title,
+  placeholder,
+  intro,
+  conversationId,
+  onConversationCreated,
+  onConversationUpdated,
+  onUsage,
+}: Props) => {
+  const { session, user } = useAuth();
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [paywall, setPaywall] = useState<string | null>(null);
   const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
+  const [loadingHistory, setLoadingHistory] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const currentConvIdRef = useRef<string | null>(null);
 
-  // Reset on tool change
+  // Load conversation when conversationId changes
   useEffect(() => {
-    setMessages([]);
-    setInput("");
+    currentConvIdRef.current = conversationId;
     setPaywall(null);
-  }, [tool]);
+    setInput("");
+
+    if (!conversationId) {
+      setMessages([]);
+      return;
+    }
+
+    let cancelled = false;
+    setLoadingHistory(true);
+    supabase
+      .from("conversations")
+      .select("messages")
+      .eq("id", conversationId)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (cancelled) return;
+        const msgs = (data?.messages as unknown as Msg[]) || [];
+        setMessages(msgs);
+        setLoadingHistory(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [conversationId]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages]);
+
+  const persist = async (msgs: Msg[]) => {
+    if (!user) return;
+    const convId = currentConvIdRef.current;
+    if (convId) {
+      await supabase.from("conversations").update({ messages: msgs as any }).eq("id", convId);
+      onConversationUpdated?.();
+    } else {
+      const firstUser = msgs.find((m) => m.role === "user");
+      const title = firstUser ? firstUser.content.slice(0, 80) : "New chat";
+      const { data } = await supabase
+        .from("conversations")
+        .insert({ user_id: user.id, tool, title, messages: msgs as any })
+        .select("id")
+        .single();
+      if (data?.id) {
+        currentConvIdRef.current = data.id;
+        onConversationCreated(data.id);
+      }
+    }
+  };
 
   const send = async () => {
     const text = input.trim();
@@ -127,6 +185,10 @@ export const ChatInterface = ({ tool, title, placeholder, intro, onUsage }: Prop
         }
       }
 
+      // Persist completed exchange
+      const finalMsgs: Msg[] = [...newMsgs, { role: "assistant", content: acc }];
+      persist(finalMsgs).catch((e) => console.error("Persist failed", e));
+
       onUsage?.();
     } catch (e) {
       console.error(e);
@@ -160,7 +222,13 @@ export const ChatInterface = ({ tool, title, placeholder, intro, onUsage }: Prop
 
       {/* Messages */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 md:px-6 py-6">
-        {messages.length === 0 && !paywall && (
+        {loadingHistory && (
+          <div className="flex justify-center py-8">
+            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+          </div>
+        )}
+
+        {!loadingHistory && messages.length === 0 && !paywall && (
           <div className="max-w-2xl mx-auto text-center py-8 md:py-16">
             <div className="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-accent-soft text-accent mb-4">
               <Sparkles className="h-6 w-6" />

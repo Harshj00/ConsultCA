@@ -3,12 +3,13 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Menu, X, Sparkles } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 const links = [
   { href: "/#features", label: "Features" },
   { href: "/#how-it-works", label: "How it works" },
+  { href: "/#demo", label: "Demo" },
   { href: "/#pricing", label: "Pricing" },
-  { href: "/#founder", label: "Founder" },
   { href: "/#faq", label: "FAQ" },
 ];
 
@@ -40,6 +41,7 @@ export const Navbar = () => {
         </ul>
 
         <div className="hidden md:flex items-center gap-3">
+          <ThemeToggle />
           {user ? (
             <Button asChild size="sm" className="bg-primary hover:bg-primary/90">
               <Link to="/app">Open dashboard</Link>
@@ -56,13 +58,16 @@ export const Navbar = () => {
           )}
         </div>
 
-        <button
-          className="md:hidden p-2 -mr-2 text-foreground"
-          onClick={() => setOpen(!open)}
-          aria-label="Toggle menu"
-        >
-          {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-        </button>
+        <div className="md:hidden flex items-center gap-2">
+          <ThemeToggle />
+          <button
+            className="p-2 -mr-2 text-foreground"
+            onClick={() => setOpen(!open)}
+            aria-label="Toggle menu"
+          >
+            {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </button>
+        </div>
       </nav>
 
       {open && (

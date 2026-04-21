@@ -11,9 +11,35 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 
+// Common disposable / temporary email providers — blocked at signup so trial can't be abused.
+const DISPOSABLE_EMAIL_DOMAINS = new Set([
+  "mailinator.com", "tempmail.com", "temp-mail.org", "temp-mail.io", "10minutemail.com",
+  "10minutemail.net", "guerrillamail.com", "guerrillamail.net", "guerrillamail.org",
+  "guerrillamail.biz", "guerrillamail.de", "sharklasers.com", "grr.la", "yopmail.com",
+  "yopmail.fr", "yopmail.net", "trashmail.com", "trashmail.net", "throwawaymail.com",
+  "fakeinbox.com", "fake-mail.net", "getnada.com", "nada.email", "maildrop.cc",
+  "mintemail.com", "mohmal.com", "mytemp.email", "tempinbox.com", "tempmailaddress.com",
+  "dispostable.com", "spambog.com", "spamgourmet.com", "mailnesia.com", "mailcatch.com",
+  "tempmailo.com", "emailondeck.com", "moakt.com", "tmail.ws", "harakirimail.com",
+  "burnermail.io", "anonbox.net", "discard.email", "mailnull.com", "incognitomail.org",
+  "tempr.email", "discardmail.com", "spam4.me", "dropmail.me", "emltmp.com",
+  "minutemail.com", "mailtemp.info", "tempemail.net", "mvrht.net", "byom.de",
+  "wegwerfmail.de", "trbvm.com", "tempail.com", "vomoto.com", "linshiyou.com",
+  "1secmail.com", "1secmail.net", "1secmail.org", "tafmail.com", "kzccv.com",
+  "etranquil.com", "instaddr.win", "mail-temp.com", "tempmail.dev", "tempmail.plus",
+  "tmpmail.org", "tmpmail.net", "luxusmail.org", "mailpoof.com", "smailpro.com",
+  "fakemail.net", "tmpeml.info", "mailfa.tech", "tmail.gg", "mail.tm",
+]);
+
 const signupSchema = z.object({
   name: z.string().trim().min(2, "Name too short").max(60),
-  email: z.string().trim().email("Invalid email").max(255),
+  email: z.string().trim().email("Invalid email").max(255).refine(
+    (e) => {
+      const domain = e.split("@")[1]?.toLowerCase().trim();
+      return !!domain && !DISPOSABLE_EMAIL_DOMAINS.has(domain);
+    },
+    { message: "Disposable / temporary emails are not allowed. Please use your real work email." }
+  ),
   password: z.string().min(8, "Min 8 characters").max(72),
   role: z.enum(["ca_student", "practicing_ca", "ca_firm"]),
 });

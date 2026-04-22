@@ -1,4 +1,5 @@
 import { Sparkles } from "lucide-react";
+import { Link } from "react-router-dom";
 
 export const Footer = () => {
   return (
@@ -27,12 +28,12 @@ export const Footer = () => {
           </div>
 
           <div>
-            <h4 className="font-semibold text-sm text-primary mb-3">Company</h4>
+            <h4 className="font-semibold text-sm text-primary mb-3">Legal</h4>
             <ul className="space-y-2 text-sm text-muted-foreground">
-              <li><a href="#" className="hover:text-foreground transition-base">About</a></li>
-              <li><a href="#" className="hover:text-foreground transition-base">Privacy</a></li>
-              <li><a href="#" className="hover:text-foreground transition-base">Terms</a></li>
-              <li><a href="#" className="hover:text-foreground transition-base">Contact</a></li>
+              <li><Link to="/privacy" className="hover:text-foreground transition-base">Privacy Policy</Link></li>
+              <li><Link to="/terms" className="hover:text-foreground transition-base">Terms of Service</Link></li>
+              <li><Link to="/refund" className="hover:text-foreground transition-base">Refund Policy</Link></li>
+              <li><a href="mailto:support@taxpilot.ai" className="hover:text-foreground transition-base">Contact</a></li>
             </ul>
           </div>
         </div>

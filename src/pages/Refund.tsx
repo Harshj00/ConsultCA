@@ -7,7 +7,7 @@ const H2 = ({ children }: { children: React.ReactNode }) => (
 const Refund = () => (
   <LegalLayout title="Refund & Cancellation Policy" updated="22 April 2026">
     <p>
-      We want you to be fully satisfied with <strong>TaxPilot AI</strong>. This policy explains when
+      We want you to be fully satisfied with <strong>ConsultYourCA AI</strong>. This policy explains when
       and how you can cancel your subscription and request a refund.
     </p>
 
@@ -52,7 +52,7 @@ const Refund = () => (
 
     <H2>5. How to request a refund</H2>
     <p>
-      Email <a className="text-accent underline" href="mailto:billing@taxpilot.ai">billing@taxpilot.ai</a> from your registered email with:
+      Email <a className="text-accent underline" href="mailto:billing@consultyourca.ai">billing@consultyourca.ai</a> from your registered email with:
     </p>
     <ul className="list-disc pl-6 space-y-1">
       <li>Your registered email and payment ID / invoice number</li>
@@ -71,7 +71,7 @@ const Refund = () => (
 
     <H2>7. Contact</H2>
     <p>
-      Questions? Email <a className="text-accent underline" href="mailto:billing@taxpilot.ai">billing@taxpilot.ai</a>.
+      Questions? Email <a className="text-accent underline" href="mailto:billing@consultyourca.ai">billing@consultyourca.ai</a>.
     </p>
   </LegalLayout>
 );

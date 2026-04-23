@@ -143,7 +143,7 @@ const Dashboard = () => {
             <span className="flex h-8 w-8 items-center justify-center rounded-md bg-gradient-primary text-primary-foreground">
               <Sparkles className="h-4 w-4" />
             </span>
-            TaxPilot<span className="text-accent">AI</span>
+            ConsultYourCA<span className="text-accent"> AI</span>
           </Link>
           <button onClick={() => setSidebarOpen(false)} className="md:hidden p-1.5 text-muted-foreground">
             <X className="h-5 w-5" />

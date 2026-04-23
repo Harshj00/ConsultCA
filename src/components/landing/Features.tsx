@@ -37,7 +37,7 @@ export const Features = () => {
             Everything a CA does manually — automated.
           </h2>
           <p className="mt-4 text-base md:text-lg text-muted-foreground">
-            Stop switching between Google, ChatGPT, and the bare Income Tax Act PDF. TaxPilot brings them together, tuned for Indian law.
+            Stop switching between Google, ChatGPT, and the bare Income Tax Act PDF. ConsultYourCA brings them together, tuned for Indian law.
           </p>
         </div>
 

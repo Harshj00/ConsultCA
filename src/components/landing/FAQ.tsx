@@ -2,12 +2,12 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 
 const faqs = [
   {
-    q: "Is TaxPilot's tax knowledge actually accurate?",
+    q: "Is ConsultYourCA's tax knowledge actually accurate?",
     a: "Every answer cites the exact section, rule and circular it's based on. We use leading reasoning models tuned with Indian tax acts, ICAI standards and recent CBDT/CBIC circulars. You can verify each citation in seconds.",
   },
   {
     q: "Can I use this for client work?",
-    a: "Yes — TaxPilot is built specifically for client-facing professional output: notice replies, client emails, and citation-backed advisory. Always review before sending, the same as you would any draft.",
+    a: "Yes — ConsultYourCA is built specifically for client-facing professional output: notice replies, client emails, and citation-backed advisory. Always review before sending, the same as you would any draft.",
   },
   {
     q: "Do I need to install anything?",

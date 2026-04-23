@@ -14,7 +14,7 @@ export const CTA = () => {
             <h2 className="font-display text-3xl md:text-4xl lg:text-5xl font-bold text-primary-foreground">
               Stop drafting from scratch.
               <br />
-              Start with TaxPilot.
+              Start with ConsultYourCA.
             </h2>
             <p className="mt-4 text-base md:text-lg text-primary-foreground/70">
               Join the CAs and CA students saving 10+ hours every week.

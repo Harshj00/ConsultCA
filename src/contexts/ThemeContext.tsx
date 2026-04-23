@@ -10,7 +10,7 @@ interface ThemeContextValue {
 
 const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
 
-const STORAGE_KEY = "taxpilot-theme";
+const STORAGE_KEY = "consultyourca-theme";
 
 const getInitialTheme = (): Theme => {
   if (typeof window === "undefined") return "light";

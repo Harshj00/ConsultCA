@@ -11,7 +11,7 @@ export const Footer = () => {
               <span className="flex h-8 w-8 items-center justify-center rounded-md bg-gradient-primary text-primary-foreground">
                 <Sparkles className="h-4 w-4" />
               </span>
-              TaxPilot<span className="text-accent">AI</span>
+              ConsultYourCA<span className="text-accent"> AI</span>
             </a>
             <p className="mt-3 text-sm text-muted-foreground max-w-sm">
               The AI co-pilot built for Indian Chartered Accountants and CA students. Made with ❤️ in India.
@@ -33,13 +33,13 @@ export const Footer = () => {
               <li><Link to="/privacy" className="hover:text-foreground transition-base">Privacy Policy</Link></li>
               <li><Link to="/terms" className="hover:text-foreground transition-base">Terms of Service</Link></li>
               <li><Link to="/refund" className="hover:text-foreground transition-base">Refund Policy</Link></li>
-              <li><a href="mailto:support@taxpilot.ai" className="hover:text-foreground transition-base">Contact</a></li>
+              <li><a href="mailto:support@consultyourca.ai" className="hover:text-foreground transition-base">Contact</a></li>
             </ul>
           </div>
         </div>
 
         <div className="mt-10 pt-6 border-t border-border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-muted-foreground">
-          <p>© {new Date().getFullYear()} TaxPilot AI. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} ConsultYourCA AI. All rights reserved.</p>
           <p>Not affiliated with ICAI. Always verify AI output before client use.</p>
         </div>
       </div>

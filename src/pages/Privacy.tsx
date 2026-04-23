@@ -7,7 +7,7 @@ const H2 = ({ children }: { children: React.ReactNode }) => (
 const Privacy = () => (
   <LegalLayout title="Privacy Policy" updated="22 April 2026">
     <p>
-      This Privacy Policy explains how <strong>TaxPilot AI</strong> ("we", "us", "our") collects,
+      This Privacy Policy explains how <strong>ConsultYourCA AI</strong> ("we", "us", "our") collects,
       uses, discloses, and protects your personal data when you use our website and services
       (the "Service"). We are committed to complying with the{" "}
       <strong>Digital Personal Data Protection Act, 2023 (DPDP Act)</strong> and applicable Indian laws.
@@ -15,8 +15,8 @@ const Privacy = () => (
 
     <H2>1. Who we are (Data Fiduciary)</H2>
     <p>
-      TaxPilot AI is the Data Fiduciary for personal data processed through the Service.
-      For any privacy-related query, write to <a className="text-accent underline" href="mailto:privacy@taxpilot.ai">privacy@taxpilot.ai</a>.
+      ConsultYourCA AI is the Data Fiduciary for personal data processed through the Service.
+      For any privacy-related query, write to <a className="text-accent underline" href="mailto:privacy@consultyourca.ai">privacy@consultyourca.ai</a>.
     </p>
 
     <H2>2. Data we collect</H2>
@@ -76,13 +76,13 @@ const Privacy = () => (
       <li>Nominate another person to exercise your rights in case of death or incapacity.</li>
       <li>Grievance redressal (see below).</li>
     </ul>
-    <p>To exercise any right, email <a className="text-accent underline" href="mailto:privacy@taxpilot.ai">privacy@taxpilot.ai</a>.</p>
+    <p>To exercise any right, email <a className="text-accent underline" href="mailto:privacy@consultyourca.ai">privacy@consultyourca.ai</a>.</p>
 
     <H2>9. Grievance Officer</H2>
     <p>
       If you are not satisfied with how we handle your data, contact our Grievance Officer:<br />
       <strong>Name:</strong> [To be appointed]<br />
-      <strong>Email:</strong> <a className="text-accent underline" href="mailto:grievance@taxpilot.ai">grievance@taxpilot.ai</a><br />
+      <strong>Email:</strong> <a className="text-accent underline" href="mailto:grievance@consultyourca.ai">grievance@consultyourca.ai</a><br />
       We aim to respond within 30 days. You may also escalate to the Data Protection Board of India.
     </p>
 
@@ -100,7 +100,7 @@ const Privacy = () => (
 
     <H2>12. Contact</H2>
     <p>
-      Questions? Email us at <a className="text-accent underline" href="mailto:support@taxpilot.ai">support@taxpilot.ai</a>.
+      Questions? Email us at <a className="text-accent underline" href="mailto:support@consultyourca.ai">support@consultyourca.ai</a>.
     </p>
   </LegalLayout>
 );

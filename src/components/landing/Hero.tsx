@@ -29,7 +29,7 @@ export const Hero = () => {
           <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
             <Button asChild size="lg" className="w-full sm:w-auto bg-primary hover:bg-primary/90 shadow-soft group">
               <Link to="/auth">
-                Start 7-day free trial
+                Get started — it's free
                 <ArrowRight className="h-4 w-4 transition-base group-hover:translate-x-0.5" />
               </Link>
             </Button>

@@ -52,7 +52,7 @@ export const Navbar = () => {
                 <Link to="/auth?mode=signin">Sign in</Link>
               </Button>
               <Button asChild size="sm" className="bg-primary hover:bg-primary/90">
-                <Link to="/auth">Start free trial</Link>
+                <Link to="/auth">Get started free</Link>
               </Button>
             </>
           )}
@@ -94,7 +94,7 @@ export const Navbar = () => {
                     <Link to="/auth?mode=signin">Sign in</Link>
                   </Button>
                   <Button asChild size="sm">
-                    <Link to="/auth">Start free trial</Link>
+                    <Link to="/auth">Get started free</Link>
                   </Button>
                 </>
               )}

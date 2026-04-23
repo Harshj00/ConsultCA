@@ -1,116 +1,60 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Check } from "lucide-react";
-
-const tiers = [
-  {
-    name: "Student",
-    price: "₹299",
-    period: "/month",
-    desc: "For CA Foundation, Inter & Final students.",
-    cta: "Start free trial",
-    highlight: false,
-    features: [
-      "200 queries / month",
-      "Tax Q&A with citations",
-      "Notice reply drafter",
-      "Client email generator",
-      "Mobile-first interface",
-    ],
-  },
-  {
-    name: "Professional",
-    price: "₹1,999",
-    period: "/month",
-    desc: "For practicing CAs in solo practice.",
-    cta: "Start free trial",
-    highlight: true,
-    features: [
-      "Unlimited queries",
-      "Everything in Student",
-      "Case law summarizer",
-      "GPT-5 / Gemini Pro reasoning",
-      "Priority response speed",
-      "Export to PDF & DOCX",
-    ],
-  },
-  {
-    name: "Firm",
-    price: "₹4,999",
-    period: "/month",
-    desc: "For CA firms with 3-10 partners.",
-    cta: "Contact sales",
-    highlight: false,
-    features: [
-      "Everything in Professional",
-      "Up to 5 team seats",
-      "Shared client library",
-      "Team usage analytics",
-      "Dedicated onboarding",
-    ],
-  },
-];
+import { Sparkles, Check } from "lucide-react";
 
 export const Pricing = () => {
   return (
-    <section id="pricing" className="py-20 md:py-28 bg-background">
+    <section id="pricing" className="py-20 md:py-28 bg-surface">
       <div className="container">
-        <div className="mx-auto max-w-2xl text-center mb-14">
-          <p className="text-sm font-semibold text-accent uppercase tracking-wider mb-3">Pricing</p>
-          <h2 className="font-display text-3xl md:text-4xl lg:text-5xl font-bold text-primary">
-            Built for India. Priced for India.
+        <div className="mx-auto max-w-2xl text-center">
+          <div className="inline-flex items-center gap-2 rounded-full border border-accent/20 bg-accent-soft px-3 py-1 text-xs font-medium text-accent mb-4">
+            <Sparkles className="h-3 w-3" />
+            Early access · 100% free
+          </div>
+          <h2 className="font-display text-3xl md:text-4xl lg:text-5xl font-bold text-primary tracking-tight">
+            Free for everyone, for now
           </h2>
           <p className="mt-4 text-base md:text-lg text-muted-foreground">
-            7-day free trial on every plan. No credit card. Cancel any time.
+            We're in early access. Use every feature with no payment, no credit card and no limits — while we build the product with feedback from real CAs.
           </p>
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-3 max-w-5xl mx-auto">
-          {tiers.map((t) => (
-            <div
-              key={t.name}
-              className={`relative flex flex-col rounded-2xl border p-6 md:p-8 transition-smooth ${
-                t.highlight
-                  ? "border-accent/40 bg-card shadow-premium lg:scale-[1.02]"
-                  : "border-border bg-card hover:border-accent/30 hover:shadow-soft"
-              }`}
-            >
-              {t.highlight && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-gradient-accent px-3 py-1 text-xs font-semibold text-accent-foreground shadow-soft">
-                  Most popular
-                </div>
-              )}
-
-              <h3 className="font-display text-xl font-semibold text-primary">{t.name}</h3>
-              <p className="mt-1.5 text-sm text-muted-foreground">{t.desc}</p>
-
-              <div className="mt-5 flex items-baseline gap-1">
-                <span className="font-display text-4xl md:text-5xl font-bold text-primary">{t.price}</span>
-                <span className="text-sm text-muted-foreground">{t.period}</span>
+        <div className="mx-auto max-w-2xl mt-12">
+          <div className="rounded-2xl border-2 border-accent/40 bg-card p-8 md:p-10 shadow-premium relative overflow-hidden">
+            <div className="absolute -top-16 -right-16 h-48 w-48 rounded-full bg-accent/10 blur-3xl" />
+            <div className="relative">
+              <div className="flex items-baseline gap-2">
+                <span className="font-display text-5xl md:text-6xl font-bold text-primary">₹0</span>
+                <span className="text-muted-foreground">/ forever during early access</span>
               </div>
+              <p className="mt-3 text-sm text-muted-foreground">
+                Full access to every tool. No credit card required. We'll give existing users a generous heads-up and a loyalty discount before any paid plan launches.
+              </p>
 
-              <Button
-                asChild
-                className={`mt-6 w-full ${t.highlight ? "bg-primary hover:bg-primary/90" : ""}`}
-                variant={t.highlight ? "default" : "outline"}
-              >
-                {t.cta === "Contact sales" ? (
-                  <a href="#founder">{t.cta}</a>
-                ) : (
-                  <Link to="/auth">{t.cta}</Link>
-                )}
-              </Button>
-
-              <ul className="mt-6 space-y-3 border-t border-border pt-6">
-                {t.features.map((f) => (
-                  <li key={f} className="flex items-start gap-2.5 text-sm">
-                    <Check className="h-4 w-4 shrink-0 text-accent mt-0.5" />
-                    <span className="text-foreground/90">{f}</span>
+              <ul className="mt-6 space-y-3 text-sm text-foreground">
+                {[
+                  "Unlimited Tax Q&A with cited sections",
+                  "Notice reply drafter (IT + GST)",
+                  "Client email generator",
+                  "Case law summarizer",
+                  "Saved chat history",
+                  "Priority email support",
+                ].map((f) => (
+                  <li key={f} className="flex items-start gap-2.5">
+                    <Check className="h-4 w-4 text-accent mt-0.5 shrink-0" />
+                    {f}
                   </li>
                 ))}
               </ul>
+
+              <Button asChild size="lg" className="w-full mt-8 bg-primary hover:bg-primary/90">
+                <Link to="/auth">Get started free</Link>
+              </Button>
+              <p className="mt-3 text-center text-xs text-muted-foreground">
+                Sign up in 30 seconds · No card · No commitment
+              </p>
             </div>
-          ))}
+          </div>
         </div>
       </div>
     </section>

@@ -122,10 +122,9 @@ const Dashboard = () => {
     fetchConversations();
   };
 
-  const isTrial = subscription?.tier === "trial";
-  const trialEnd = profile?.trial_ends_at ? new Date(profile.trial_ends_at) : null;
-  const daysLeft = trialEnd ? Math.max(0, Math.ceil((trialEnd.getTime() - Date.now()) / 86400000)) : 0;
-  const queriesLeft = Math.max(0, 25 - usageCount);
+  // Early access: free for everyone, no trial limits
+  void subscription;
+  void profile;
 
   const tool = TOOLS.find((t) => t.id === activeTool)!;
   const recentConvs = conversations.filter((c) => c.tool === activeTool).slice(0, 20);
@@ -212,26 +211,18 @@ const Dashboard = () => {
 
         {/* Usage / trial card */}
         <div className="p-3 border-t border-border space-y-3">
-          {isTrial && (
-            <div className="rounded-lg bg-card border border-accent/20 p-3">
-              <div className="flex items-center gap-2 text-xs font-semibold text-accent">
-                <Crown className="h-3.5 w-3.5" />
-                Free Trial
-              </div>
-              <p className="mt-1.5 text-xs text-muted-foreground">
-                {queriesLeft} of 25 queries left · {daysLeft} day{daysLeft !== 1 ? "s" : ""} remaining
-              </p>
-              <div className="mt-2 h-1.5 rounded-full bg-muted overflow-hidden">
-                <div
-                  className="h-full bg-gradient-accent transition-base"
-                  style={{ width: `${Math.min(100, (usageCount / 25) * 100)}%` }}
-                />
-              </div>
-              <Button asChild size="sm" className="w-full mt-3 h-8 text-xs">
-                <a href="/#pricing">Upgrade now</a>
-              </Button>
+          <div className="rounded-lg bg-card border border-accent/20 p-3">
+            <div className="flex items-center gap-2 text-xs font-semibold text-accent">
+              <Crown className="h-3.5 w-3.5" />
+              Early Access · Free
             </div>
-          )}
+            <p className="mt-1.5 text-xs text-muted-foreground">
+              Unlimited queries during our early access period. No card needed.
+            </p>
+            <p className="mt-1.5 text-[11px] text-muted-foreground">
+              {usageCount} {usageCount === 1 ? "query" : "queries"} used so far
+            </p>
+          </div>
 
           <div className="flex items-center gap-2 px-2">
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-primary text-primary-foreground text-sm font-semibold">

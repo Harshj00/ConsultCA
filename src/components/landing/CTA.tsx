@@ -22,7 +22,7 @@ export const CTA = () => {
             <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
               <Button asChild size="lg" className="w-full sm:w-auto bg-accent hover:bg-accent/90 text-accent-foreground group">
                 <Link to="/auth">
-                  Start 7-day free trial
+                  Get started free
                   <ArrowRight className="h-4 w-4 transition-base group-hover:translate-x-0.5" />
                 </Link>
               </Button>
@@ -36,7 +36,7 @@ export const CTA = () => {
               </Button>
             </div>
             <p className="mt-4 text-xs text-primary-foreground/50">
-              No credit card · Cancel anytime · GST invoice included
+              100% free during early access · No credit card required
             </p>
           </div>
         </div>

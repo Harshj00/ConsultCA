@@ -24,7 +24,7 @@ export const Navbar = () => {
           <span className="flex h-8 w-8 items-center justify-center rounded-md bg-gradient-primary text-primary-foreground">
             <Sparkles className="h-4 w-4" />
           </span>
-          TaxPilot<span className="text-accent">AI</span>
+          ConsultYourCA<span className="text-accent"> AI</span>
         </Link>
 
         <ul className="hidden md:flex items-center gap-8">

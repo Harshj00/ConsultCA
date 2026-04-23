@@ -128,7 +128,7 @@ const Auth = () => {
           <span className="flex h-8 w-8 items-center justify-center rounded-md bg-gradient-primary text-primary-foreground">
             <Sparkles className="h-4 w-4" />
           </span>
-          TaxPilot<span className="text-accent">AI</span>
+          ConsultYourCA<span className="text-accent">AI</span>
         </Link>
       </header>
 
@@ -187,7 +187,7 @@ const Auth = () => {
               <TabsContent value="signin">
                 <div className="mb-5">
                   <h1 className="font-display text-2xl font-bold text-primary">Welcome back</h1>
-                  <p className="text-sm text-muted-foreground mt-1">Sign in to your TaxPilot dashboard.</p>
+                  <p className="text-sm text-muted-foreground mt-1">Sign in to your ConsultYourCA dashboard.</p>
                 </div>
                 <form onSubmit={handleLogin} className="space-y-4">
                   <div className="space-y-1.5">

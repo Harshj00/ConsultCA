@@ -51,7 +51,7 @@ export const Hero = () => {
               <span className="h-2.5 w-2.5 rounded-full bg-destructive/60" />
               <span className="h-2.5 w-2.5 rounded-full bg-yellow-400/70" />
               <span className="h-2.5 w-2.5 rounded-full bg-accent/60" />
-              <span className="ml-3 text-xs text-muted-foreground font-medium">taxpilot.ai · Tax Q&A</span>
+              <span className="ml-3 text-xs text-muted-foreground font-medium">consultyourca.ai · Tax Q&A</span>
             </div>
             <div className="p-4 sm:p-6 md:p-8 space-y-4">
               <div className="flex justify-end">

@@ -8,7 +8,7 @@ const Terms = () => (
   <LegalLayout title="Terms of Service" updated="22 April 2026">
     <p>
       These Terms of Service ("Terms") govern your access to and use of{" "}
-      <strong>TaxPilot AI</strong> (the "Service"). By creating an account or using the Service,
+      <strong>ConsultYourCA AI</strong> (the "Service"). By creating an account or using the Service,
       you agree to be bound by these Terms. If you do not agree, do not use the Service.
     </p>
 
@@ -22,7 +22,7 @@ const Terms = () => (
     <p>
       You are responsible for maintaining the confidentiality of your login credentials and for
       all activity under your account. Notify us immediately at{" "}
-      <a className="text-accent underline" href="mailto:security@taxpilot.ai">security@taxpilot.ai</a>{" "}
+      <a className="text-accent underline" href="mailto:security@consultyourca.ai">security@consultyourca.ai</a>{" "}
       of any unauthorised access.
     </p>
 
@@ -46,7 +46,7 @@ const Terms = () => (
 
     <H2>5. AI output disclaimer — IMPORTANT</H2>
     <p>
-      TaxPilot AI provides <strong>AI-generated information for reference only</strong>. It is{" "}
+      ConsultYourCA AI provides <strong>AI-generated information for reference only</strong>. It is{" "}
       <strong>not legal, tax, or professional advice</strong> and does not create a professional
       relationship. The Service may produce inaccurate, outdated, or incomplete information
       ("hallucinations"). <strong>You must independently verify every answer against the Bare Act,
@@ -57,14 +57,14 @@ const Terms = () => (
 
     <H2>6. Not affiliated with ICAI</H2>
     <p>
-      TaxPilot AI is an independent software product. We are not affiliated with, endorsed by, or
+      ConsultYourCA AI is an independent software product. We are not affiliated with, endorsed by, or
       sponsored by the Institute of Chartered Accountants of India (ICAI), the Income Tax
       Department, GSTN, or any government body.
     </p>
 
     <H2>7. Intellectual property</H2>
     <p>
-      The Service, including software, design, and branding, is owned by TaxPilot AI and protected
+      The Service, including software, design, and branding, is owned by ConsultYourCA AI and protected
       by copyright and trademark law. You retain ownership of the queries you submit and the
       outputs you generate; we grant you a worldwide, royalty-free licence to use generated
       outputs for your professional work, subject to Section 5.
@@ -79,7 +79,7 @@ const Terms = () => (
 
     <H2>9. Limitation of liability</H2>
     <p>
-      To the maximum extent permitted by law, TaxPilot AI's total aggregate liability for any
+      To the maximum extent permitted by law, ConsultYourCA AI's total aggregate liability for any
       claim arising out of or relating to the Service shall not exceed the fees paid by you in the
       <strong> 3 months</strong> preceding the event. We are not liable for indirect, incidental,
       consequential, or punitive damages, including lost profits, lost data, or reliance on AI
@@ -88,7 +88,7 @@ const Terms = () => (
 
     <H2>10. Indemnity</H2>
     <p>
-      You agree to indemnify and hold TaxPilot AI harmless from any claim arising from your misuse
+      You agree to indemnify and hold ConsultYourCA AI harmless from any claim arising from your misuse
       of the Service, your violation of these Terms, or your violation of third-party rights
       (including your clients').
     </p>
@@ -107,7 +107,7 @@ const Terms = () => (
 
     <H2>13. Contact</H2>
     <p>
-      Email <a className="text-accent underline" href="mailto:support@taxpilot.ai">support@taxpilot.ai</a> for any questions about these Terms.
+      Email <a className="text-accent underline" href="mailto:support@consultyourca.ai">support@consultyourca.ai</a> for any questions about these Terms.
     </p>
   </LegalLayout>
 );

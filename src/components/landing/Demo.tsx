@@ -182,7 +182,7 @@ export const Demo = () => {
                 <div className="group max-w-[92%] rounded-2xl rounded-bl-sm bg-muted px-4 py-3 text-sm">
                   <div className="flex items-center gap-1.5 mb-2 text-xs font-semibold text-accent">
                     <Sparkles className="h-3.5 w-3.5" />
-                    TaxPilot AI
+                    ConsultYourCA AI
                   </div>
                   {typed.length === 0 ? (
                     <span className="inline-flex gap-1 items-center text-muted-foreground">

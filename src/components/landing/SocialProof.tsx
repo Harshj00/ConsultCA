@@ -7,7 +7,7 @@ const testimonials = [
     role: "CA Articleship · Mumbai",
   },
   {
-    quote: "I stopped using ChatGPT for tax queries. It hallucinated section numbers. TaxPilot doesn't.",
+    quote: "I stopped using ChatGPT for tax queries. It hallucinated section numbers. ConsultYourCA doesn't.",
     name: "CA Priya S.",
     role: "Solo practitioner · Bengaluru",
   },

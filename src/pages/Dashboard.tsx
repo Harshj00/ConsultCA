@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
 import { ChatInterface } from "@/components/app/ChatInterface";
 import { toast } from "sonner";
 import { MessageSquare, FileWarning, Mail, Scale, Sparkles, LogOut, Menu, X, Crown, Plus, Trash2 } from "lucide-react";

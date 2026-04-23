@@ -18,7 +18,7 @@ export const LegalLayout = ({ title, updated, children }: LegalLayoutProps) => {
             <span className="flex h-8 w-8 items-center justify-center rounded-md bg-gradient-primary text-primary-foreground">
               <Sparkles className="h-4 w-4" />
             </span>
-            ConsultYourCA<span className="text-accent">AI</span>
+            ConsultYourCA<span className="text-accent"> AI</span>
           </Link>
           <div className="flex items-center gap-2">
             <ThemeToggle />

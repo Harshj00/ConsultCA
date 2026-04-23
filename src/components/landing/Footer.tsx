@@ -11,7 +11,7 @@ export const Footer = () => {
               <span className="flex h-8 w-8 items-center justify-center rounded-md bg-gradient-primary text-primary-foreground">
                 <Sparkles className="h-4 w-4" />
               </span>
-              ConsultYourCA<span className="text-accent">AI</span>
+              ConsultYourCA<span className="text-accent"> AI</span>
             </a>
             <p className="mt-3 text-sm text-muted-foreground max-w-sm">
               The AI co-pilot built for Indian Chartered Accountants and CA students. Made with ❤️ in India.

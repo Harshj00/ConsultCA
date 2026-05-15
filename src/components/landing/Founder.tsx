@@ -1,4 +1,5 @@
 import { Linkedin, Globe, Mail } from "lucide-react";
+import founderPhoto from "@/assets/founder.jpg";
 
 export const Founder = () => {
   return (
@@ -17,9 +18,12 @@ export const Founder = () => {
 
           <div className="rounded-2xl border border-border bg-card shadow-premium p-6 md:p-10">
             <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
-              <div className="flex h-20 w-20 md:h-24 md:w-24 shrink-0 items-center justify-center rounded-full bg-gradient-primary text-primary-foreground font-display text-3xl font-bold shadow-soft">
-                HJ
-              </div>
+              <img
+                src={founderPhoto}
+                alt="Harsh Kumar Jha, Founder of ConsultYourCA AI"
+                loading="lazy"
+                className="h-24 w-24 md:h-28 md:w-28 shrink-0 rounded-full object-cover ring-2 ring-accent/30 shadow-soft"
+              />
               <div className="flex-1 text-center md:text-left">
                 <h3 className="font-display text-xl md:text-2xl font-bold text-primary">Harsh Kumar Jha</h3>
                 <p className="text-sm text-accent font-medium mt-0.5">Founder · ConsultYourCA AI</p>

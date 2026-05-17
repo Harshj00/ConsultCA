@@ -10,6 +10,7 @@ import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { Seo } from "@/components/Seo";
 
 // Common disposable / temporary email providers — blocked at signup so trial can't be abused.
 const DISPOSABLE_EMAIL_DOMAINS = new Set([

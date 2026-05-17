@@ -124,6 +124,11 @@ const Auth = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-gradient-hero">
+      <Seo
+        title="Sign in or create your free account — ConsultYourCA AI"
+        description="Log in or sign up for ConsultYourCA AI — the AI co-pilot for Indian CAs and CA students. 7-day free trial, no card required."
+        path="/auth"
+      />
       <header className="container py-5">
         <Link to="/" className="inline-flex items-center gap-2 font-display font-bold text-lg text-primary">
           <span className="flex h-8 w-8 items-center justify-center rounded-md bg-gradient-primary text-primary-foreground">

@@ -130,6 +130,11 @@ const Dashboard = () => {
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
+      <Seo
+        title="Dashboard — ConsultYourCA AI"
+        description="Your ConsultYourCA workspace: Tax Q&A, notice replies, client emails and case-law summaries."
+        path="/app"
+      />
       {/* Sidebar */}
       <aside
         className={`${

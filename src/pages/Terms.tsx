@@ -1,4 +1,5 @@
 import { LegalLayout } from "@/components/legal/LegalLayout";
+import { Seo } from "@/components/Seo";
 
 const H2 = ({ children }: { children: React.ReactNode }) => (
   <h2 className="font-display text-xl md:text-2xl font-semibold text-primary mt-8 mb-3">{children}</h2>
@@ -6,6 +7,11 @@ const H2 = ({ children }: { children: React.ReactNode }) => (
 
 const Terms = () => (
   <LegalLayout title="Terms of Service" updated="22 April 2026">
+    <Seo
+      title="Terms of Service — ConsultYourCA AI"
+      description="Terms governing access to and use of ConsultYourCA AI by Indian CAs and CA students."
+      path="/terms"
+    />
     <p>
       These Terms of Service ("Terms") govern your access to and use of{" "}
       <strong>ConsultYourCA AI</strong> (the "Service"). By creating an account or using the Service,

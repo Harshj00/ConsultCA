@@ -1,4 +1,5 @@
 import { LegalLayout } from "@/components/legal/LegalLayout";
+import { Seo } from "@/components/Seo";
 
 const H2 = ({ children }: { children: React.ReactNode }) => (
   <h2 className="font-display text-xl md:text-2xl font-semibold text-primary mt-8 mb-3">{children}</h2>
@@ -6,6 +7,11 @@ const H2 = ({ children }: { children: React.ReactNode }) => (
 
 const Refund = () => (
   <LegalLayout title="Refund & Cancellation Policy" updated="22 April 2026">
+    <Seo
+      title="Refund & Cancellation — ConsultYourCA AI"
+      description="Refund eligibility, cancellation process and free-trial details for ConsultYourCA AI subscriptions."
+      path="/refund"
+    />
     <p>
       We want you to be fully satisfied with <strong>ConsultYourCA AI</strong>. This policy explains when
       and how you can cancel your subscription and request a refund.

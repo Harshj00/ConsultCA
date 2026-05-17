@@ -4,6 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { ChatInterface } from "@/components/app/ChatInterface";
 import { toast } from "sonner";
+import { Seo } from "@/components/Seo";
 import { MessageSquare, FileWarning, Mail, Scale, Sparkles, LogOut, Menu, X, Crown, Plus, Trash2 } from "lucide-react";
 
 type Tool = "qa" | "notice" | "email" | "caselaw";

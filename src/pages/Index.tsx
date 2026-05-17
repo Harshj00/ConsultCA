@@ -1,3 +1,4 @@
+import { Seo } from "@/components/Seo";
 import { Navbar } from "@/components/landing/Navbar";
 import { Hero } from "@/components/landing/Hero";
 import { Features } from "@/components/landing/Features";
@@ -13,6 +14,11 @@ import { Footer } from "@/components/landing/Footer";
 const Index = () => {
   return (
     <div className="min-h-screen bg-background">
+      <Seo
+        title="ConsultYourCA AI — AI Co-Pilot for Indian CAs"
+        description="AI assistant for Indian CAs & CA students. Tax Q&A with cited sections, notice replies, client emails — in seconds."
+        path="/"
+      />
       <Navbar />
       <main>
         <Hero />

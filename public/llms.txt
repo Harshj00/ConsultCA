@@ -1,0 +1,13 @@
+# ConsultYourCA AI
+
+> AI co-pilot built for Indian Chartered Accountants and CA students — answers tax questions with cited Income Tax Act, GST Act and Companies Act sections, drafts notice replies, client emails and case-law summaries.
+
+ConsultYourCA AI is an Indian tax-focused AI assistant. Unlike general AI tools, every answer cites the exact section, rule and circular it's based on (e.g. Section 10(13A), Rule 2A, CBDT Circular No. 8/2013), tuned for the Income Tax Act, GST Act, Companies Act, ICAI standards and recent CBDT/CBIC circulars.
+
+## Pages
+
+- [Home](/): Product overview, features, pricing, FAQ.
+- [Sign in / Sign up](/auth): Create an account or log in (free 7-day trial).
+- [Privacy Policy](/privacy): DPDP Act 2023 compliant privacy practices.
+- [Terms of Service](/terms): Usage terms.
+- [Refund & Cancellation](/refund): Refund eligibility and cancellation.

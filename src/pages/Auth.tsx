@@ -10,6 +10,7 @@ import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { Seo } from "@/components/Seo";
 
 // Common disposable / temporary email providers — blocked at signup so trial can't be abused.
 const DISPOSABLE_EMAIL_DOMAINS = new Set([
@@ -123,6 +124,11 @@ const Auth = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-gradient-hero">
+      <Seo
+        title="Sign in or create your free account — ConsultYourCA AI"
+        description="Log in or sign up for ConsultYourCA AI — the AI co-pilot for Indian CAs and CA students. 7-day free trial, no card required."
+        path="/auth"
+      />
       <header className="container py-5">
         <Link to="/" className="inline-flex items-center gap-2 font-display font-bold text-lg text-primary">
           <span className="flex h-8 w-8 items-center justify-center rounded-md bg-gradient-primary text-primary-foreground">

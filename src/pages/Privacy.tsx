@@ -1,4 +1,5 @@
 import { LegalLayout } from "@/components/legal/LegalLayout";
+import { Seo } from "@/components/Seo";
 
 const H2 = ({ children }: { children: React.ReactNode }) => (
   <h2 className="font-display text-xl md:text-2xl font-semibold text-primary mt-8 mb-3">{children}</h2>
@@ -6,6 +7,11 @@ const H2 = ({ children }: { children: React.ReactNode }) => (
 
 const Privacy = () => (
   <LegalLayout title="Privacy Policy" updated="22 April 2026">
+    <Seo
+      title="Privacy Policy — ConsultYourCA AI"
+      description="How ConsultYourCA AI collects, uses and protects your data under India's DPDP Act 2023."
+      path="/privacy"
+    />
     <p>
       This Privacy Policy explains how <strong>ConsultYourCA AI</strong> ("we", "us", "our") collects,
       uses, discloses, and protects your personal data when you use our website and services

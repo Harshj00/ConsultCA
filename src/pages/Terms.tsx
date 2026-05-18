@@ -113,7 +113,7 @@ const Terms = () => (
 
     <H2>13. Contact</H2>
     <p>
-      Email <a className="text-accent underline" href="mailto:support@consultyourca.ai">support@consultyourca.ai</a> for any questions about these Terms.
+      Email <a className="text-accent underline" href="mailto:SendThose10bucks@gmail.com">SendThose10bucks@gmail.com</a> for any questions about these Terms.
     </p>
   </LegalLayout>
 );

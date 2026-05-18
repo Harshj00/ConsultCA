@@ -106,7 +106,7 @@ const Privacy = () => (
 
     <H2>12. Contact</H2>
     <p>
-      Questions? Email us at <a className="text-accent underline" href="mailto:support@consultyourca.ai">support@consultyourca.ai</a>.
+      Questions? Email us at <a className="text-accent underline" href="mailto:SendThose10bucks@gmail.com">SendThose10bucks@gmail.com</a>.
     </p>
   </LegalLayout>
 );

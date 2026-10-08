@@ -1,0 +1,3 @@
+- [ ] Add server-side Jev routing and stream metadata using the supported gateway.
+- [ ] Add actual routing status and collapsible latency/cost telemetry to the workspace.
+- [ ] Fix Recharts 3 type compatibility; run routing tests and verify current preview build.

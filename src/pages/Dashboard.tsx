@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { ChatInterface } from "@/components/app/ChatInterface";
+import { SystemOneTelemetry, type RouterTelemetry } from "@/components/app/SystemOneTelemetry";
 import { toast } from "sonner";
 import { Seo } from "@/components/Seo";
 import { MessageSquare, FileWarning, Mail, Scale, Sparkles, LogOut, Menu, X, Crown, Plus, Trash2 } from "lucide-react";
@@ -59,6 +60,7 @@ const Dashboard = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeConvId, setActiveConvId] = useState<string | null>(null);
+  const [telemetry, setTelemetry] = useState<RouterTelemetry>({ stage: "idle" });
 
   const fetchUsage = async () => {
     if (!user) return;
@@ -91,18 +93,21 @@ const Dashboard = () => {
 
   const handleNewChat = () => {
     setActiveConvId(null);
+    setTelemetry({ stage: "idle" });
     setSidebarOpen(false);
   };
 
   const handleSelectConv = (conv: Conversation) => {
     setActiveTool(conv.tool);
     setActiveConvId(conv.id);
+    setTelemetry({ stage: "idle" });
     setSidebarOpen(false);
   };
 
   const handleToolSwitch = (id: Tool) => {
     setActiveTool(id);
     setActiveConvId(null);
+    setTelemetry({ stage: "idle" });
     setSidebarOpen(false);
   };
 
@@ -126,7 +131,7 @@ const Dashboard = () => {
   void subscription;
   void profile;
 
-  const tool = TOOLS.find((t) => t.id === activeTool)!;
+  const tool = TOOLS.find((t) => t.id === activeTool) ?? TOOLS[0];
   const recentConvs = conversations.filter((c) => c.tool === activeTool).slice(0, 20);
 
   return (
@@ -266,6 +271,7 @@ const Dashboard = () => {
           </button>
         </div>
 
+        <SystemOneTelemetry telemetry={telemetry} />
         <ChatInterface
           key={`${tool.id}-${activeConvId ?? "new"}`}
           tool={tool.id}
@@ -276,6 +282,7 @@ const Dashboard = () => {
           onConversationCreated={handleConversationCreated}
           onConversationUpdated={fetchConversations}
           onUsage={fetchUsage}
+          onTelemetry={setTelemetry}
         />
       </div>
     </div>

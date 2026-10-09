@@ -185,6 +185,8 @@ export const ChatInterface = ({
       let done = false;
       let eventName = "";
       let streamError: string | null = null;
+      let requestBlocked = false;
+      let latestTelemetry: Omit<RouterTelemetry, "stage"> = {};
 
       const processSseLine = (line: string) => {
         if (line.endsWith("\r")) line = line.slice(0, -1);
@@ -203,7 +205,9 @@ export const ChatInterface = ({
         try {
           const j = JSON.parse(data);
           if (eventName === "telemetry" || j.type === "telemetry") {
+            latestTelemetry = { ...latestTelemetry, ...j };
             if (j.stage === "blocked") {
+              requestBlocked = true;
               onTelemetry?.({ ...j, stage: "blocked" });
               return;
             }
@@ -276,7 +280,19 @@ export const ChatInterface = ({
         return;
       }
 
-      onTelemetry?.({ stage: "complete", generationLatencyMs: Math.round(performance.now() - generationStartedAt) });
+      if (requestBlocked) {
+        setMessages(messages);
+        toast.error("System One stopped this request for safety.");
+        return;
+      }
+
+      onTelemetry?.({
+        ...latestTelemetry,
+        stage: "complete",
+        generationLatencyMs: typeof latestTelemetry.generationLatencyMs === "number"
+          ? latestTelemetry.generationLatencyMs
+          : Math.round(performance.now() - generationStartedAt),
+      });
 
       // Persist completed exchange
       const finalMsgs: Msg[] = [...newMsgs, { role: "assistant", content: acc }];

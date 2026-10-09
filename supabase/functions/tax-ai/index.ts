@@ -96,6 +96,17 @@ const isValidBody = (value: unknown): value is Body => {
 const encodeSse = (event: string, data: unknown) =>
   `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
 
+function gatewayErrorMessage(body: string, fallback: string): string {
+  try {
+    const parsed = JSON.parse(body) as { error?: { message?: unknown }; message?: unknown };
+    if (typeof parsed.error?.message === "string") return parsed.error.message;
+    if (typeof parsed.message === "string") return parsed.message;
+  } catch {
+    // Keep the documented safe fallback if the gateway returned non-JSON text.
+  }
+  return fallback;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -189,7 +200,11 @@ serve(async (req) => {
     if (!jevResp.ok) {
       const safeBody = await jevResp.text();
       console.error("System One gateway error", jevResp.status, safeBody);
-      return jsonResponse({ error: "System One routing is unavailable. Please try again later." }, jevResp.status);
+      const message = gatewayErrorMessage(safeBody, "System One routing is unavailable. Please try again later.");
+      return jsonResponse({
+        error: message,
+        message,
+      }, jevResp.status);
     }
 
     let decision;
@@ -211,10 +226,11 @@ serve(async (req) => {
     };
 
     if (decision.blocked) {
-      return new Response(encodeSse("telemetry", { ...telemetry, stage: "blocked" }), {
-        status: 200,
-        headers: { ...corsHeaders, "Content-Type": "text/event-stream", "Cache-Control": "no-cache" },
-      });
+      return jsonResponse({
+        error: "Jev Security Guardrail: This request was blocked after a high-confidence safety review.",
+        message: "Jev Security Guardrail: This request was blocked after a high-confidence safety review.",
+        telemetry: { ...telemetry, stage: "blocked" },
+      }, 403);
     }
 
     const LOVABLE_API_KEY = systemOneKey;
@@ -249,18 +265,9 @@ serve(async (req) => {
 
     if (!aiResp.ok) {
       const safeBody = await aiResp.text();
-      let message = "The AI service could not complete this request.";
-      try {
-        const parsed = JSON.parse(safeBody) as { error?: { message?: string }; message?: string };
-        message = parsed.error?.message ?? parsed.message ?? message;
-      } catch {
-        // Keep a safe user-facing message when the gateway body is not JSON.
-      }
+      const message = gatewayErrorMessage(safeBody, "The AI service could not complete this request.");
       console.error("AI gateway error", aiResp.status, safeBody);
-      const clientStatus = aiResp.status === 429 || aiResp.status === 402 || aiResp.status === 403 || aiResp.status === 400
-        ? aiResp.status
-        : aiResp.status >= 500 ? 503 : 502;
-      return jsonResponse({ error: "ai_error", message }, clientStatus);
+      return jsonResponse({ error: "ai_error", message }, aiResp.status);
     }
 
     const { error: usageError } = await admin.from("usage_log").insert({ user_id: user.id, tool: body.tool });
@@ -269,6 +276,49 @@ serve(async (req) => {
     const encoder = new TextEncoder();
     const decoder = new TextDecoder();
     let aiReader: ReadableStreamDefaultReader<Uint8Array>;
+    let aiBuffer = "";
+    let streamSawText = false;
+    const transformResponsesSseLine = (line: string) => {
+      const normalized = line.endsWith("\r") ? line.slice(0, -1) : line;
+      if (!normalized.startsWith("data:")) return "";
+      const payload = normalized.slice(5).trim();
+      if (!payload) return "";
+      if (payload === "[DONE]") return "data: [DONE]\n\n";
+
+      try {
+        const event = JSON.parse(payload) as {
+          type?: string;
+          delta?: string;
+          error?: { message?: string };
+          response?: {
+            output?: { content?: { type?: string; text?: string }[] }[];
+            error?: { message?: string };
+          };
+        };
+        if (event.type === "response.output_text.delta" && typeof event.delta === "string") {
+          streamSawText = true;
+          return `data: ${JSON.stringify({ choices: [{ delta: { content: event.delta } }] })}\n\n`;
+        }
+        if (event.type === "response.completed" || event.type === "response.incomplete") {
+          const outputs = event.response?.output ?? [];
+          const finalText = outputs.flatMap((output) => output.content ?? [])
+            .filter((part) => part.type === "output_text" && typeof part.text === "string")
+            .map((part) => part.text)
+            .join("");
+          const finalChunk = !streamSawText && finalText
+            ? `data: ${JSON.stringify({ choices: [{ delta: { content: finalText } }] })}\n\n`
+            : "";
+          return `${finalChunk}data: [DONE]\n\n`;
+        }
+        if (event.type === "response.failed" || event.type === "error") {
+          const message = event.response?.error?.message ?? event.error?.message ?? "The AI stream ended unexpectedly. Please try again.";
+          return `data: ${JSON.stringify({ error: { message } })}\ndata: [DONE]\n\n`;
+        }
+      } catch {
+        return "";
+      }
+      return "";
+    };
     try {
       if (!aiResp.body) return jsonResponse({ error: "The AI stream was empty." }, 502);
       aiReader = aiResp.body.getReader();
@@ -286,7 +336,23 @@ serve(async (req) => {
       async pull(controller) {
         try {
           const { done, value } = await aiReader.read();
+          if (value) aiBuffer += decoder.decode(value, { stream: !done });
+          const chunks: string[] = [];
+          let lineBreak = -1;
+          while ((lineBreak = aiBuffer.indexOf("\n")) !== -1) {
+            const line = aiBuffer.slice(0, lineBreak + 1);
+            aiBuffer = aiBuffer.slice(lineBreak + 1);
+            chunks.push(line);
+          }
+
           if (done) {
+            if (aiBuffer) {
+              chunks.push(aiBuffer);
+              aiBuffer = "";
+            }
+            let translated = "";
+            for (const line of chunks) translated += transformResponsesSseLine(line);
+            if (translated) controller.enqueue(encoder.encode(translated));
             const generationLatencyMs = Math.round(performance.now() - streamStartedAt);
             controller.enqueue(encoder.encode(encodeSse("telemetry", {
               ...telemetry,
@@ -297,37 +363,8 @@ serve(async (req) => {
             return;
           }
 
-          const text = decoder.decode(value, { stream: true });
           let translated = "";
-          for (const line of text.split(/(?<=\n)/)) {
-            if (!line.startsWith("data:")) {
-              translated += line;
-              continue;
-            }
-            const payload = line.slice(5).trim();
-            if (!payload || payload === "[DONE]") {
-              translated += line;
-              continue;
-            }
-            try {
-              const event = JSON.parse(payload) as { type?: string; delta?: string; item?: { content?: { type?: string; text?: string }[] }; response?: { output?: { content?: { type?: string; text?: string }[] }[] } };
-              if (event.type === "response.output_text.delta" && typeof event.delta === "string") {
-                translated += `data: ${JSON.stringify({ choices: [{ delta: { content: event.delta } }] })}\n`;
-              } else if (event.type === "response.completed" || event.type === "response.incomplete") {
-                const outputs = event.response?.output ?? [];
-                const finalText = outputs.flatMap((output) => output.content ?? [])
-                  .filter((part) => part.type === "output_text" && typeof part.text === "string")
-                  .map((part) => part.text)
-                  .join("");
-                translated += `data: ${JSON.stringify({ choices: [{ delta: { content: finalText } }] })}\n`;
-              } else if (event.type === "response.failed" || event.type === "error") {
-                const message = "The AI stream ended unexpectedly. Please try again.";
-                translated += `data: ${JSON.stringify({ error: { message } })}\n`;
-              }
-            } catch {
-              translated += line;
-            }
-          }
+          for (const line of chunks) translated += transformResponsesSseLine(line);
           if (translated) controller.enqueue(encoder.encode(translated));
         } catch (error) {
           if (req.signal.aborted && error instanceof Error && error.name === "AbortError") {

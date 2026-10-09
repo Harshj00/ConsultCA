@@ -96,6 +96,17 @@ const isValidBody = (value: unknown): value is Body => {
 const encodeSse = (event: string, data: unknown) =>
   `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
 
+function gatewayErrorMessage(body: string, fallback: string): string {
+  try {
+    const parsed = JSON.parse(body) as { error?: { message?: unknown }; message?: unknown };
+    if (typeof parsed.error?.message === "string") return parsed.error.message;
+    if (typeof parsed.message === "string") return parsed.message;
+  } catch {
+    // Keep the documented safe fallback if the gateway returned non-JSON text.
+  }
+  return fallback;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -189,9 +200,10 @@ serve(async (req) => {
     if (!jevResp.ok) {
       const safeBody = await jevResp.text();
       console.error("System One gateway error", jevResp.status, safeBody);
+      const message = gatewayErrorMessage(safeBody, "System One routing is unavailable. Please try again later.");
       return jsonResponse({
-        error: "System One routing is unavailable. Please try again later.",
-        message: "System One routing is unavailable. Please try again later.",
+        error: message,
+        message,
       }, jevResp.status);
     }
 
@@ -253,13 +265,7 @@ serve(async (req) => {
 
     if (!aiResp.ok) {
       const safeBody = await aiResp.text();
-      let message = "The AI service could not complete this request.";
-      try {
-        const parsed = JSON.parse(safeBody) as { error?: { message?: string }; message?: string };
-        message = parsed.error?.message ?? parsed.message ?? message;
-      } catch {
-        // Keep a safe user-facing message when the gateway body is not JSON.
-      }
+      const message = gatewayErrorMessage(safeBody, "The AI service could not complete this request.");
       console.error("AI gateway error", aiResp.status, safeBody);
       return jsonResponse({ error: "ai_error", message }, aiResp.status);
     }
@@ -271,6 +277,48 @@ serve(async (req) => {
     const decoder = new TextDecoder();
     let aiReader: ReadableStreamDefaultReader<Uint8Array>;
     let aiBuffer = "";
+    let streamSawText = false;
+    const transformResponsesSseLine = (line: string) => {
+      const normalized = line.endsWith("\r") ? line.slice(0, -1) : line;
+      if (!normalized.startsWith("data:")) return "";
+      const payload = normalized.slice(5).trim();
+      if (!payload) return "";
+      if (payload === "[DONE]") return "data: [DONE]\n\n";
+
+      try {
+        const event = JSON.parse(payload) as {
+          type?: string;
+          delta?: string;
+          error?: { message?: string };
+          response?: {
+            output?: { content?: { type?: string; text?: string }[] }[];
+            error?: { message?: string };
+          };
+        };
+        if (event.type === "response.output_text.delta" && typeof event.delta === "string") {
+          streamSawText = true;
+          return `data: ${JSON.stringify({ choices: [{ delta: { content: event.delta } }] })}\n\n`;
+        }
+        if (event.type === "response.completed" || event.type === "response.incomplete") {
+          const outputs = event.response?.output ?? [];
+          const finalText = outputs.flatMap((output) => output.content ?? [])
+            .filter((part) => part.type === "output_text" && typeof part.text === "string")
+            .map((part) => part.text)
+            .join("");
+          const finalChunk = !streamSawText && finalText
+            ? `data: ${JSON.stringify({ choices: [{ delta: { content: finalText } }] })}\n\n`
+            : "";
+          return `${finalChunk}data: [DONE]\n\n`;
+        }
+        if (event.type === "response.failed" || event.type === "error") {
+          const message = event.response?.error?.message ?? event.error?.message ?? "The AI stream ended unexpectedly. Please try again.";
+          return `data: ${JSON.stringify({ error: { message } })}\ndata: [DONE]\n\n`;
+        }
+      } catch {
+        return "";
+      }
+      return "";
+    };
     try {
       if (!aiResp.body) return jsonResponse({ error: "The AI stream was empty." }, 502);
       aiReader = aiResp.body.getReader();

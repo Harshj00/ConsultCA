@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Send, Copy, Check, Loader2, Sparkles, AlertCircle } from "lucide-react";
 import ReactMarkdown from "react-markdown";
+import type { RouterTelemetry } from "@/components/app/SystemOneTelemetry";
 
 type Tool = "qa" | "notice" | "email" | "caselaw";
 
@@ -23,6 +24,7 @@ interface Props {
   onConversationCreated: (id: string) => void;
   onConversationUpdated?: () => void;
   onUsage?: () => void;
+  onTelemetry?: (telemetry: RouterTelemetry) => void;
 }
 
 export const ChatInterface = ({
@@ -34,6 +36,7 @@ export const ChatInterface = ({
   onConversationCreated,
   onConversationUpdated,
   onUsage,
+  onTelemetry,
 }: Props) => {
   const { session, user } = useAuth();
   const [messages, setMessages] = useState<Msg[]>([]);
@@ -109,6 +112,7 @@ export const ChatInterface = ({
     const newMsgs = [...messages, userMsg];
     setMessages(newMsgs);
     setBusy(true);
+    onTelemetry?.({ stage: "routing" });
 
     try {
       const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/tax-ai`;
@@ -122,25 +126,56 @@ export const ChatInterface = ({
       });
 
       if (resp.status === 402) {
-        const j = await resp.json();
+        const j = await resp.json().catch(() => ({}));
         setPaywall(j.message || "Trial limit reached. Upgrade to continue.");
         setMessages(newMsgs.slice(0, -1));
         setInput(text);
         setBusy(false);
         return;
       }
-      if (resp.status === 429) {
-        toast.error("Too many requests. Please wait a moment.");
+      if (!resp.ok) {
+        const responseBody = await resp.json().catch(() => ({}));
+        const responseMessage = typeof responseBody.message === "string"
+          ? responseBody.message
+          : typeof responseBody.error === "string"
+            ? responseBody.error
+            : "The request could not be completed. Please try again.";
+        if (resp.status === 403 && responseBody.telemetry) {
+          onTelemetry?.({ ...responseBody.telemetry, stage: "blocked" });
+          setMessages(messages);
+          toast.error("System One stopped this request for safety.");
+          setBusy(false);
+          return;
+        }
+        if (resp.status === 429) {
+          toast.error(responseMessage || "Too many requests. Please wait a moment.");
+        } else {
+          toast.error(responseMessage);
+        }
         setMessages(newMsgs.slice(0, -1));
         setInput(text);
         setBusy(false);
         return;
       }
-      if (!resp.ok || !resp.body) {
+      if (!resp.body) {
         toast.error("Failed to get a response. Please try again.");
         setMessages(newMsgs.slice(0, -1));
         setBusy(false);
         return;
+      }
+
+      const telemetryHeader = resp.headers.get("X-System-One-Telemetry");
+      let generationStartedAt = performance.now();
+      if (telemetryHeader) {
+        try {
+          const routingTelemetry = JSON.parse(decodeURIComponent(telemetryHeader)) as Omit<RouterTelemetry, "stage">;
+          generationStartedAt = performance.now();
+          onTelemetry?.({ ...routingTelemetry, stage: "escalating" });
+        } catch {
+          onTelemetry?.({ stage: "escalating" });
+        }
+      } else {
+        onTelemetry?.({ stage: "escalating" });
       }
 
       const reader = resp.body.getReader();
@@ -148,42 +183,100 @@ export const ChatInterface = ({
       let buf = "";
       let acc = "";
       let done = false;
+      let eventName = "";
+      let streamError: string | null = null;
+
+      const processSseLine = (line: string) => {
+        if (line.endsWith("\r")) line = line.slice(0, -1);
+        if (line.startsWith("event:")) {
+          eventName = line.slice(6).trim();
+          return;
+        }
+        if (!line.startsWith("data:")) return;
+        const data = line.slice(5).trim();
+        if (data === "[DONE]") {
+          done = true;
+          eventName = "";
+          return;
+        }
+        if (!data) return;
+        try {
+          const j = JSON.parse(data);
+          if (eventName === "telemetry" || j.type === "telemetry") {
+            if (j.stage === "blocked") {
+              onTelemetry?.({ ...j, stage: "blocked" });
+              return;
+            }
+            if (j.stage === "complete") {
+              onTelemetry?.({ ...j, stage: "complete" });
+              return;
+            }
+          }
+
+          if (j.type === "response.failed" || j.type === "error" || j.error) {
+            streamError = j.error?.message ?? j.response?.error?.message ?? "The AI stream ended unexpectedly.";
+            done = true;
+            return;
+          }
+          const delta = j.type === "response.output_text.delta"
+            ? j.delta
+            : j.choices?.[0]?.delta?.content;
+          if (typeof delta === "string") {
+            acc += delta;
+            setMessages((current) => {
+              const updated = [...current];
+              updated[updated.length - 1] = { role: "assistant", content: acc };
+              return updated;
+            });
+          }
+          if (j.type === "response.completed" && !acc) {
+            const completedText = j.response?.output?.flatMap((item: { content?: { type?: string; text?: string }[] }) => item.content ?? [])
+              .filter((item: { type?: string; text?: string }) => item.type === "output_text" && typeof item.text === "string")
+              .map((item: { text: string }) => item.text)
+              .join("");
+            if (completedText) {
+              acc = completedText;
+              setMessages((current) => {
+                const updated = [...current];
+                updated[updated.length - 1] = { role: "assistant", content: acc };
+                return updated;
+              });
+            }
+          }
+        } catch {
+          // Incomplete or non-JSON event data is ignored until the next SSE data line.
+        } finally {
+          eventName = "";
+        }
+      };
 
       // Add empty assistant placeholder
       setMessages((m) => [...m, { role: "assistant", content: "" }]);
 
       while (!done) {
         const { done: d, value } = await reader.read();
-        if (d) break;
+        if (d) {
+          if (buf.trim()) processSseLine(buf);
+          break;
+        }
         buf += decoder.decode(value, { stream: true });
         let idx: number;
         while ((idx = buf.indexOf("\n")) !== -1) {
-          let line = buf.slice(0, idx);
+          const line = buf.slice(0, idx);
           buf = buf.slice(idx + 1);
-          if (line.endsWith("\r")) line = line.slice(0, -1);
-          if (!line.startsWith("data: ")) continue;
-          const data = line.slice(6).trim();
-          if (data === "[DONE]") {
-            done = true;
-            break;
-          }
-          try {
-            const j = JSON.parse(data);
-            const delta = j.choices?.[0]?.delta?.content;
-            if (delta) {
-              acc += delta;
-              setMessages((m) => {
-                const c = [...m];
-                c[c.length - 1] = { role: "assistant", content: acc };
-                return c;
-              });
-            }
-          } catch {
-            buf = line + "\n" + buf;
-            break;
-          }
+          processSseLine(line);
+          if (done) break;
         }
       }
+
+      if (streamError) {
+        toast.error(streamError);
+        setMessages(newMsgs);
+        onTelemetry?.({ stage: "error" });
+        return;
+      }
+
+      onTelemetry?.({ stage: "complete", generationLatencyMs: Math.round(performance.now() - generationStartedAt) });
 
       // Persist completed exchange
       const finalMsgs: Msg[] = [...newMsgs, { role: "assistant", content: acc }];
@@ -194,6 +287,7 @@ export const ChatInterface = ({
       console.error(e);
       toast.error("Network error. Please retry.");
       setMessages(newMsgs);
+      onTelemetry?.({ stage: "error" });
     } finally {
       setBusy(false);
     }
@@ -299,6 +393,18 @@ export const ChatInterface = ({
       {/* Composer */}
       <div className="border-t border-border bg-card px-4 md:px-6 py-3 md:py-4">
         <div className="max-w-3xl mx-auto">
+          {onTelemetry && (
+            <div aria-live="polite" className="mb-2">
+              {busy && (
+                <p className="text-xs text-muted-foreground">System One is checking your request before it reaches the AI assistant.</p>
+              )}
+              {!busy && messages.length > 0 && (
+                <p className="text-xs text-muted-foreground">
+                  System One {messages[messages.length - 1]?.role === "assistant" ? "routed this request to the answer service." : "is ready to review your next request."}
+                </p>
+              )}
+            </div>
+          )}
           <div className="relative flex items-end gap-2 rounded-xl border border-border bg-background p-2 focus-within:border-accent transition-base">
             <Textarea
               value={input}

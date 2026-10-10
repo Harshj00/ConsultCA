@@ -14,6 +14,27 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_gateway_access_state: {
+        Row: {
+          denial_reason: string
+          denial_type: string
+          denied_at: string
+          id: string
+        }
+        Insert: {
+          denial_reason: string
+          denial_type: string
+          denied_at?: string
+          id: string
+        }
+        Update: {
+          denial_reason?: string
+          denial_type?: string
+          denied_at?: string
+          id?: string
+        }
+        Relationships: []
+      }
       conversations: {
         Row: {
           created_at: string

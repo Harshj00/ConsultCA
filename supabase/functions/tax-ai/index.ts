@@ -8,13 +8,14 @@ import {
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+    "authorization, x-client-info, apikey, content-type, x-lovable-aig-run-id, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+  "Access-Control-Expose-Headers": "X-Lovable-AIG-Run-ID",
 };
 
-const jsonResponse = (value: unknown, status: number) =>
+const jsonResponse = (value: unknown, status: number, extraHeaders?: HeadersInit) =>
   new Response(JSON.stringify(value), {
     status,
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
+    headers: { ...corsHeaders, "Content-Type": "application/json", ...Object.fromEntries(new Headers(extraHeaders)) },
   });
 
 const SYSTEM_PROMPTS: Record<string, string> = {
@@ -105,6 +106,63 @@ function gatewayErrorMessage(body: string, fallback: string): string {
     // Keep the documented safe fallback if the gateway returned non-JSON text.
   }
   return fallback;
+}
+
+function gatewayErrorType(body: string): string | undefined {
+  try {
+    const parsed = JSON.parse(body) as { error?: { type?: unknown; code?: unknown }; type?: unknown };
+    const candidate = parsed.error?.type ?? parsed.error?.code ?? parsed.type;
+    return typeof candidate === "string" ? candidate : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function isWorkspacePolicyBlock(type: string | undefined): boolean {
+  return type === "credit_limit_reached" || type === "ai_disabled" || type === "workspace_ai_disabled";
+}
+
+function gatewayRunIdFetch(initialRunId?: string) {
+  let runId = initialRunId?.trim() || undefined;
+  return {
+    getRunId: () => runId,
+    fetch: async (input: RequestInfo | URL, init?: RequestInit) => {
+      const headers = new Headers(init?.headers);
+      if (runId && !headers.has("X-Lovable-AIG-Run-ID")) {
+        headers.set("X-Lovable-AIG-Run-ID", runId);
+      }
+      const response = await fetch(input, { ...init, headers });
+      runId ??= response.headers.get("X-Lovable-AIG-Run-ID")?.trim() || undefined;
+      return response;
+    },
+    responseHeaders: (upstream?: Headers, init?: HeadersInit) => {
+      const headers = new Headers({ ...corsHeaders, ...Object.fromEntries(new Headers(init)) });
+      upstream?.forEach((value, name) => {
+        if (name.toLowerCase().startsWith("x-lovable-aig-")) headers.set(name, value);
+      });
+      if (runId) headers.set("X-Lovable-AIG-Run-ID", runId);
+      const exposed = new Set((headers.get("Access-Control-Expose-Headers") ?? "").split(",").map((part) => part.trim()).filter(Boolean));
+      headers.forEach((_, name) => {
+        if (name.toLowerCase().startsWith("x-lovable-aig-")) exposed.add(name);
+      });
+      headers.set("Access-Control-Expose-Headers", [...exposed].join(", "));
+      return headers;
+    },
+  };
+}
+
+async function persistGatewayAccessDenial(
+  admin: ReturnType<typeof createClient>,
+  denialType: string | undefined,
+  reason: string,
+) {
+  const { error } = await admin.from("ai_gateway_access_state").upsert({
+    id: "gateway_access",
+    denied_at: new Date().toISOString(),
+    denial_type: denialType ?? "access_denied",
+    denial_reason: reason,
+  });
+  if (error) console.error("Could not persist AI gateway access state", error.message);
 }
 
 serve(async (req) => {

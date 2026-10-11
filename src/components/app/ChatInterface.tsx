@@ -2,10 +2,28 @@ import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
+import {
+  Conversation,
+  ConversationContent,
+  ConversationEmptyState,
+  ConversationScrollButton,
+} from "@/components/ai-elements/conversation";
+import {
+  Message,
+  MessageAction,
+  MessageActions,
+  MessageContent,
+  MessageResponse,
+} from "@/components/ai-elements/message";
+import {
+  PromptInput,
+  PromptInputFooter,
+  PromptInputSubmit,
+  PromptInputTextarea,
+} from "@/components/ai-elements/prompt-input";
+import { Shimmer } from "@/components/ai-elements/shimmer";
 import { toast } from "sonner";
-import { Send, Copy, Check, Loader2, Sparkles, AlertCircle } from "lucide-react";
-import ReactMarkdown from "react-markdown";
+import { Copy, Check, Loader2, AlertCircle, FileText } from "lucide-react";
 import type { RouterTelemetry } from "@/components/app/SystemOneTelemetry";
 
 type Tool = "qa" | "notice" | "email" | "caselaw";
@@ -43,6 +61,7 @@ export const ChatInterface = ({
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [paywall, setPaywall] = useState<string | null>(null);
+  const [safetyBlockMessage, setSafetyBlockMessage] = useState<string | null>(null);
   const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
   const [loadingHistory, setLoadingHistory] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -52,6 +71,7 @@ export const ChatInterface = ({
   useEffect(() => {
     currentConvIdRef.current = conversationId;
     setPaywall(null);
+    setSafetyBlockMessage(null);
     setInput("");
 
     if (!conversationId) {
@@ -78,10 +98,6 @@ export const ChatInterface = ({
     };
   }, [conversationId]);
 
-  useEffect(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
-  }, [messages]);
-
   const persist = async (msgs: Msg[]) => {
     if (!user) return;
     const convId = currentConvIdRef.current;
@@ -103,11 +119,12 @@ export const ChatInterface = ({
     }
   };
 
-  const send = async () => {
-    const text = input.trim();
+  const send = async (value = input) => {
+    const text = value.trim();
     if (!text || busy || !session) return;
 
     setInput("");
+    setSafetyBlockMessage(null);
     const userMsg: Msg = { role: "user", content: text };
     const newMsgs = [...messages, userMsg];
     setMessages(newMsgs);
@@ -142,7 +159,8 @@ export const ChatInterface = ({
             : "The request could not be completed. Please try again.";
         if (resp.status === 403 && responseBody.telemetry) {
           onTelemetry?.({ ...responseBody.telemetry, stage: "blocked" });
-          setMessages(messages);
+          setMessages(newMsgs);
+          setSafetyBlockMessage(responseMessage);
           toast.error("System One stopped this request for safety.");
           setBusy(false);
           return;
@@ -182,9 +200,11 @@ export const ChatInterface = ({
       const decoder = new TextDecoder();
       let buf = "";
       let acc = "";
-      let done = false;
+      let streamClosed = false;
       let eventName = "";
       let streamError: string | null = null;
+      let streamDenied: string | null = null;
+      let streamRefusal: string | null = null;
       let requestBlocked = false;
       let latestTelemetry: Omit<RouterTelemetry, "stage"> = {};
 
@@ -196,11 +216,7 @@ export const ChatInterface = ({
         }
         if (!line.startsWith("data:")) return;
         const data = line.slice(5).trim();
-        if (data === "[DONE]") {
-          done = true;
-          eventName = "";
-          return;
-        }
+        if (data === "[DONE]") { eventName = ""; return; }
         if (!data) return;
         try {
           const j = JSON.parse(data);
@@ -218,8 +234,15 @@ export const ChatInterface = ({
           }
 
           if (j.type === "response.failed" || j.type === "error" || j.error) {
-            streamError = j.error?.message ?? j.response?.error?.message ?? "The AI stream ended unexpectedly.";
-            done = true;
+            streamError = j.error?.message ?? j.message ?? j.response?.error?.message ?? "The AI stream ended unexpectedly.";
+            return;
+          }
+          if (eventName === "denied" || j.type === "denied") {
+            streamDenied = j.message ?? "AI provider access is denied.";
+            return;
+          }
+          if (eventName === "refusal" || j.type === "refusal") {
+            streamRefusal = j.message ?? "The provider refused this request.";
             return;
           }
           const delta = j.type === "response.output_text.delta"
@@ -257,10 +280,11 @@ export const ChatInterface = ({
       // Add empty assistant placeholder
       setMessages((m) => [...m, { role: "assistant", content: "" }]);
 
-      while (!done) {
+      while (!streamClosed) {
         const { done: d, value } = await reader.read();
         if (d) {
           if (buf.trim()) processSseLine(buf);
+          streamClosed = true;
           break;
         }
         buf += decoder.decode(value, { stream: true });
@@ -269,8 +293,15 @@ export const ChatInterface = ({
           const line = buf.slice(0, idx);
           buf = buf.slice(idx + 1);
           processSseLine(line);
-          if (done) break;
         }
+      }
+
+      if (streamDenied || streamRefusal) {
+        const message = streamDenied ?? streamRefusal ?? "The provider could not complete this request.";
+        toast.error(message);
+        setMessages(newMsgs);
+        onTelemetry?.({ stage: "error" });
+        return;
       }
 
       if (streamError) {
@@ -283,6 +314,13 @@ export const ChatInterface = ({
       if (requestBlocked) {
         setMessages(messages);
         toast.error("System One stopped this request for safety.");
+        return;
+      }
+
+      if (!acc.trim()) {
+        toast.error("The AI service ended without an answer. Please try again.");
+        setMessages(newMsgs);
+        onTelemetry?.({ stage: "error" });
         return;
       }
 

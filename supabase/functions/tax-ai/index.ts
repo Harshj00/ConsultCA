@@ -348,30 +348,43 @@ serve(async (req) => {
       })),
     ];
 
-    const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/responses", {
-      method: "POST",
-      signal: req.signal,
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Lovable-API-Key": LOVABLE_API_KEY,
-        "Content-Type": "application/json",
-        "X-Lovable-AIG-SDK": "fetch",
-      },
-      body: JSON.stringify({
-        model,
-        input,
-        stream: true,
-        store: false,
-        reasoning: { effort: "low", summary: "auto" },
-        include: ["reasoning.encrypted_content"],
-      }),
-    });
+    let aiResp: Response;
+    try {
+      aiResp = await gateway.fetch("https://ai.gateway.lovable.dev/v1/responses", {
+        method: "POST",
+        signal: req.signal,
+        headers: {
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          "Lovable-API-Key": LOVABLE_API_KEY,
+          "Content-Type": "application/json",
+          "X-Lovable-AIG-SDK": "fetch",
+        },
+        body: JSON.stringify({
+          model,
+          input,
+          stream: true,
+          store: false,
+          reasoning: { effort: "low", summary: "auto" },
+          include: ["reasoning.encrypted_content"],
+        }),
+      });
+    } catch (error) {
+      if (req.signal.aborted && error instanceof Error && error.name === "AbortError") {
+        return new Response(null, { status: 499, headers: corsHeaders });
+      }
+      console.error("AI gateway request failed", error);
+      return jsonResponse({ error: "The AI service could not complete this request. Please try again." }, 503);
+    }
 
     if (!aiResp.ok) {
       const safeBody = await aiResp.text();
       const message = gatewayErrorMessage(safeBody, "The AI service could not complete this request.");
       console.error("AI gateway error", aiResp.status, safeBody);
-      return jsonResponse({ error: "ai_error", message }, aiResp.status);
+      const errorType = gatewayErrorType(safeBody);
+      if (isProviderAccessDenial(aiResp.status, errorType)) {
+        await persistGatewayAccessDenial(admin, errorType, message);
+      }
+      return jsonResponse({ error: "ai_error", message, type: errorType }, aiResp.status, gateway.responseHeaders(aiResp.headers));
     }
 
     const { error: usageError } = await admin.from("usage_log").insert({ user_id: user.id, tool: body.tool });

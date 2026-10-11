@@ -252,10 +252,27 @@ serve(async (req) => {
     const systemOneKey = Deno.env.get("LOVABLE_API_KEY");
     if (!systemOneKey) return jsonResponse({ error: "AI is not configured." }, 500);
 
+    const { data: accessState, error: accessStateError } = await admin
+      .from("ai_gateway_access_state")
+      .select("denial_type, denial_reason")
+      .eq("id", "gateway_access")
+      .maybeSingle();
+    if (accessStateError) {
+      console.error("AI gateway access state check failed", accessStateError.message);
+      return jsonResponse({ error: "AI service access could not be verified. Please try again later." }, 503);
+    }
+    if (accessState?.denial_type && !isWorkspacePolicyBlock(accessState.denial_type)) {
+      return jsonResponse({
+        error: accessState.denial_reason,
+        message: accessState.denial_reason,
+        type: accessState.denial_type,
+      }, 403);
+    }
+
     const jevStartedAt = performance.now();
     let jevResp: Response;
     try {
-      jevResp = await fetch("https://ai.gateway.lovable.dev/v1/systemone", {
+      jevResp = await gatewayRunIdFetch().fetch("https://ai.gateway.lovable.dev/v1/systemone", {
         method: "POST",
         signal: req.signal,
         headers: {
@@ -282,9 +299,14 @@ serve(async (req) => {
       const safeBody = await jevResp.text();
       console.error("System One gateway error", jevResp.status, safeBody);
       const message = gatewayErrorMessage(safeBody, "System One routing is unavailable. Please try again later.");
+      const errorType = gatewayErrorType(safeBody);
+      if (isProviderAccessDenial(jevResp.status, errorType)) {
+        await persistGatewayAccessDenial(admin, errorType, message);
+      }
       return jsonResponse({
         error: message,
         message,
+        type: errorType,
       }, jevResp.status);
     }
 
@@ -308,8 +330,8 @@ serve(async (req) => {
 
     if (decision.blocked) {
       return jsonResponse({
-        error: "Jev Security Guardrail: This request was blocked after a high-confidence safety review.",
-        message: "Jev Security Guardrail: This request was blocked after a high-confidence safety review.",
+        error: SAFE_BLOCK_MESSAGE,
+        message: SAFE_BLOCK_MESSAGE,
         telemetry: { ...telemetry, stage: "blocked" },
       }, 403);
     }

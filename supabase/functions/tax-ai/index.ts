@@ -12,6 +12,8 @@ const corsHeaders = {
   "Access-Control-Expose-Headers": "X-Lovable-AIG-Run-ID",
 };
 
+const SAFE_BLOCK_MESSAGE = "System One stopped this request because it matched a high-confidence safety risk.";
+
 const jsonResponse = (value: unknown, status: number, extraHeaders?: HeadersInit) =>
   new Response(JSON.stringify(value), {
     status,
@@ -136,7 +138,8 @@ function gatewayRunIdFetch(initialRunId?: string) {
       return response;
     },
     responseHeaders: (upstream?: Headers, init?: HeadersInit) => {
-      const headers = new Headers({ ...corsHeaders, ...Object.fromEntries(new Headers(init)) });
+      const headers = new Headers(corsHeaders);
+      new Headers(init).forEach((value, name) => headers.set(name, value));
       upstream?.forEach((value, name) => {
         if (name.toLowerCase().startsWith("x-lovable-aig-")) headers.set(name, value);
       });
@@ -163,6 +166,26 @@ async function persistGatewayAccessDenial(
     denial_reason: reason,
   });
   if (error) console.error("Could not persist AI gateway access state", error.message);
+}
+
+function isProviderAccessDenial(status: number, type: string | undefined): boolean {
+  if (status !== 403) return false;
+  return !isWorkspacePolicyBlock(type);
+}
+
+function responseEvent(name: string, data: unknown): string {
+  return `event: ${name}\ndata: ${JSON.stringify(data)}\n\n`;
+}
+
+function readResponsesEvent(frame: string): { event: string; data: string } | null {
+  let event = "message";
+  const dataLines: string[] = [];
+  for (const rawLine of frame.split(/\r?\n/)) {
+    if (rawLine.startsWith("event:")) event = rawLine.slice(6).trim() || "message";
+    if (rawLine.startsWith("data:")) dataLines.push(rawLine.slice(5).trimStart());
+  }
+  if (dataLines.length === 0) return null;
+  return { event, data: dataLines.join("\n") };
 }
 
 serve(async (req) => {
@@ -229,10 +252,28 @@ serve(async (req) => {
     const systemOneKey = Deno.env.get("LOVABLE_API_KEY");
     if (!systemOneKey) return jsonResponse({ error: "AI is not configured." }, 500);
 
+    const { data: accessState, error: accessStateError } = await admin
+      .from("ai_gateway_access_state")
+      .select("denial_type, denial_reason")
+      .eq("id", "gateway_access")
+      .maybeSingle();
+    if (accessStateError) {
+      console.error("AI gateway access state check failed", accessStateError.message);
+      return jsonResponse({ error: "AI service access could not be verified. Please try again later." }, 503);
+    }
+    if (accessState?.denial_type && !isWorkspacePolicyBlock(accessState.denial_type)) {
+      return jsonResponse({
+        error: accessState.denial_reason,
+        message: accessState.denial_reason,
+        type: accessState.denial_type,
+      }, 403);
+    }
+
+    const gateway = gatewayRunIdFetch();
     const jevStartedAt = performance.now();
     let jevResp: Response;
     try {
-      jevResp = await fetch("https://ai.gateway.lovable.dev/v1/systemone", {
+      jevResp = await gateway.fetch("https://ai.gateway.lovable.dev/v1/systemone", {
         method: "POST",
         signal: req.signal,
         headers: {
@@ -259,9 +300,14 @@ serve(async (req) => {
       const safeBody = await jevResp.text();
       console.error("System One gateway error", jevResp.status, safeBody);
       const message = gatewayErrorMessage(safeBody, "System One routing is unavailable. Please try again later.");
+      const errorType = gatewayErrorType(safeBody);
+      if (isProviderAccessDenial(jevResp.status, errorType)) {
+        await persistGatewayAccessDenial(admin, errorType, message);
+      }
       return jsonResponse({
         error: message,
         message,
+        type: errorType,
       }, jevResp.status);
     }
 
@@ -285,8 +331,8 @@ serve(async (req) => {
 
     if (decision.blocked) {
       return jsonResponse({
-        error: "Jev Security Guardrail: This request was blocked after a high-confidence safety review.",
-        message: "Jev Security Guardrail: This request was blocked after a high-confidence safety review.",
+        error: SAFE_BLOCK_MESSAGE,
+        message: SAFE_BLOCK_MESSAGE,
         telemetry: { ...telemetry, stage: "blocked" },
       }, 403);
     }
@@ -302,30 +348,43 @@ serve(async (req) => {
       })),
     ];
 
-    const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/responses", {
-      method: "POST",
-      signal: req.signal,
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Lovable-API-Key": LOVABLE_API_KEY,
-        "Content-Type": "application/json",
-        "X-Lovable-AIG-SDK": "fetch",
-      },
-      body: JSON.stringify({
-        model,
-        input,
-        stream: true,
-        store: false,
-        reasoning: { effort: "low", summary: "auto" },
-        include: ["reasoning.encrypted_content"],
-      }),
-    });
+    let aiResp: Response;
+    try {
+      aiResp = await gateway.fetch("https://ai.gateway.lovable.dev/v1/responses", {
+        method: "POST",
+        signal: req.signal,
+        headers: {
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          "Lovable-API-Key": LOVABLE_API_KEY,
+          "Content-Type": "application/json",
+          "X-Lovable-AIG-SDK": "fetch",
+        },
+        body: JSON.stringify({
+          model,
+          input,
+          stream: true,
+          store: false,
+          reasoning: { effort: "low", summary: "auto" },
+          include: ["reasoning.encrypted_content"],
+        }),
+      });
+    } catch (error) {
+      if (req.signal.aborted && error instanceof Error && error.name === "AbortError") {
+        return new Response(null, { status: 499, headers: corsHeaders });
+      }
+      console.error("AI gateway request failed", error);
+      return jsonResponse({ error: "The AI service could not complete this request. Please try again." }, 503);
+    }
 
     if (!aiResp.ok) {
       const safeBody = await aiResp.text();
       const message = gatewayErrorMessage(safeBody, "The AI service could not complete this request.");
       console.error("AI gateway error", aiResp.status, safeBody);
-      return jsonResponse({ error: "ai_error", message }, aiResp.status);
+      const errorType = gatewayErrorType(safeBody);
+      if (isProviderAccessDenial(aiResp.status, errorType)) {
+        await persistGatewayAccessDenial(admin, errorType, message);
+      }
+      return jsonResponse({ error: "ai_error", message, type: errorType }, aiResp.status, gateway.responseHeaders(aiResp.headers));
     }
 
     const { error: usageError } = await admin.from("usage_log").insert({ user_id: user.id, tool: body.tool });

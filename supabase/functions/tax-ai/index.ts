@@ -269,10 +269,11 @@ serve(async (req) => {
       }, 403);
     }
 
+    const gateway = gatewayRunIdFetch();
     const jevStartedAt = performance.now();
     let jevResp: Response;
     try {
-      jevResp = await gatewayRunIdFetch().fetch("https://ai.gateway.lovable.dev/v1/systemone", {
+      jevResp = await gateway.fetch("https://ai.gateway.lovable.dev/v1/systemone", {
         method: "POST",
         signal: req.signal,
         headers: {

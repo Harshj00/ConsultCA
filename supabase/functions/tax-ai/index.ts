@@ -12,6 +12,8 @@ const corsHeaders = {
   "Access-Control-Expose-Headers": "X-Lovable-AIG-Run-ID",
 };
 
+const SAFE_BLOCK_MESSAGE = "System One stopped this request because it matched a high-confidence safety risk.";
+
 const jsonResponse = (value: unknown, status: number, extraHeaders?: HeadersInit) =>
   new Response(JSON.stringify(value), {
     status,
@@ -136,7 +138,8 @@ function gatewayRunIdFetch(initialRunId?: string) {
       return response;
     },
     responseHeaders: (upstream?: Headers, init?: HeadersInit) => {
-      const headers = new Headers({ ...corsHeaders, ...Object.fromEntries(new Headers(init)) });
+      const headers = new Headers(corsHeaders);
+      new Headers(init).forEach((value, name) => headers.set(name, value));
       upstream?.forEach((value, name) => {
         if (name.toLowerCase().startsWith("x-lovable-aig-")) headers.set(name, value);
       });
@@ -163,6 +166,26 @@ async function persistGatewayAccessDenial(
     denial_reason: reason,
   });
   if (error) console.error("Could not persist AI gateway access state", error.message);
+}
+
+function isProviderAccessDenial(status: number, type: string | undefined): boolean {
+  if (status !== 403) return false;
+  return !isWorkspacePolicyBlock(type);
+}
+
+function responseEvent(name: string, data: unknown): string {
+  return `event: ${name}\ndata: ${JSON.stringify(data)}\n\n`;
+}
+
+function readResponsesEvent(frame: string): { event: string; data: string } | null {
+  let event = "message";
+  const dataLines: string[] = [];
+  for (const rawLine of frame.split(/\r?\n/)) {
+    if (rawLine.startsWith("event:")) event = rawLine.slice(6).trim() || "message";
+    if (rawLine.startsWith("data:")) dataLines.push(rawLine.slice(5).trimStart());
+  }
+  if (dataLines.length === 0) return null;
+  return { event, data: dataLines.join("\n") };
 }
 
 serve(async (req) => {

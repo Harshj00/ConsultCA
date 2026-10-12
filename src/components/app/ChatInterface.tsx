@@ -21,9 +21,8 @@ import {
   PromptInputSubmit,
   PromptInputTextarea,
 } from "@/components/ai-elements/prompt-input";
-import { Shimmer } from "@/components/ai-elements/shimmer";
 import { toast } from "sonner";
-import { Copy, Check, Loader2, AlertCircle, FileText } from "lucide-react";
+import { Copy, Check, Loader2, AlertCircle, FileText, ShieldAlert } from "lucide-react";
 import type { RouterTelemetry } from "@/components/app/SystemOneTelemetry";
 
 type Tool = "qa" | "notice" | "email" | "caselaw";
@@ -58,7 +57,6 @@ export const ChatInterface = ({
 }: Props) => {
   const { session, user } = useAuth();
   const [messages, setMessages] = useState<Msg[]>([]);
-  const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [paywall, setPaywall] = useState<string | null>(null);
   const [safetyBlockMessage, setSafetyBlockMessage] = useState<string | null>(null);
@@ -72,7 +70,6 @@ export const ChatInterface = ({
     currentConvIdRef.current = conversationId;
     setPaywall(null);
     setSafetyBlockMessage(null);
-    setInput("");
 
     if (!conversationId) {
       setMessages([]);
@@ -119,11 +116,10 @@ export const ChatInterface = ({
     }
   };
 
-  const send = async (value = input) => {
+  const send = async (value: string) => {
     const text = value.trim();
     if (!text || busy || !session) return;
 
-    setInput("");
     setSafetyBlockMessage(null);
     const userMsg: Msg = { role: "user", content: text };
     const newMsgs = [...messages, userMsg];
@@ -146,7 +142,6 @@ export const ChatInterface = ({
         const j = await resp.json().catch(() => ({}));
         setPaywall(j.message || "Trial limit reached. Upgrade to continue.");
         setMessages(newMsgs.slice(0, -1));
-        setInput(text);
         setBusy(false);
         return;
       }
@@ -171,7 +166,6 @@ export const ChatInterface = ({
           toast.error(responseMessage);
         }
         setMessages(newMsgs.slice(0, -1));
-        setInput(text);
         setBusy(false);
         return;
       }
@@ -354,13 +348,6 @@ export const ChatInterface = ({
     setTimeout(() => setCopiedIdx(null), 1500);
   };
 
-  const onKey = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      send();
-    }
-  };
-
   return (
     <div className="flex flex-col h-full bg-background">
       {/* Header */}
@@ -369,80 +356,58 @@ export const ChatInterface = ({
       </div>
 
       {/* Messages */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 md:px-6 py-6">
-        {loadingHistory && (
-          <div className="flex justify-center py-8">
-            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-          </div>
-        )}
-
-        {!loadingHistory && messages.length === 0 && !paywall && (
-          <div className="max-w-2xl mx-auto text-center py-8 md:py-16">
-            <div className="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-accent-soft text-accent mb-4">
-              <Sparkles className="h-6 w-6" />
-            </div>
-            <p className="text-muted-foreground leading-relaxed max-w-lg mx-auto">{intro}</p>
-          </div>
-        )}
-
-        <div className="max-w-3xl mx-auto space-y-5">
+      <Conversation className="min-h-0 flex-1">
+        <ConversationContent className="mx-auto w-full max-w-4xl px-4 py-6 md:px-6">
+          {loadingHistory && <div className="flex justify-center py-8"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>}
+          {!loadingHistory && messages.length === 0 && !paywall && (
+            <ConversationEmptyState
+              className="min-h-64"
+              icon={<FileText className="mx-auto h-6 w-6" />}
+              title={title}
+              description={intro}
+            />
+          )}
           {messages.map((m, i) => (
-            <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
-              <div
-                className={`group max-w-[92%] md:max-w-[85%] rounded-2xl px-4 py-3 text-sm ${
-                  m.role === "user"
-                    ? "bg-primary text-primary-foreground rounded-br-sm"
-                    : "bg-muted text-foreground rounded-bl-sm"
-                }`}
-              >
-                {m.role === "assistant" ? (
-                  <>
-                    <div className="prose prose-sm max-w-none prose-headings:text-foreground prose-p:text-foreground prose-strong:text-foreground prose-li:text-foreground prose-code:text-accent prose-code:bg-accent-soft prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:before:content-none prose-code:after:content-none">
-                      {m.content ? (
-                        <ReactMarkdown>{m.content}</ReactMarkdown>
-                      ) : (
-                        <span className="inline-flex gap-1 items-center text-muted-foreground">
-                          <span className="h-1.5 w-1.5 rounded-full bg-accent animate-pulse" />
-                          <span className="h-1.5 w-1.5 rounded-full bg-accent animate-pulse" style={{ animationDelay: "150ms" }} />
-                          <span className="h-1.5 w-1.5 rounded-full bg-accent animate-pulse" style={{ animationDelay: "300ms" }} />
-                        </span>
-                      )}
-                    </div>
-                    {m.content && (
-                      <button
-                        onClick={() => copy(m.content, i)}
-                        className="mt-2 inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-base opacity-0 group-hover:opacity-100"
-                      >
-                        {copiedIdx === i ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
-                        {copiedIdx === i ? "Copied" : "Copy"}
-                      </button>
-                    )}
-                  </>
-                ) : (
-                  <p className="whitespace-pre-wrap">{m.content}</p>
-                )}
-              </div>
-            </div>
+            <Message key={`${i}-${m.role}`} from={m.role}>
+              <MessageContent>
+                {m.role === "assistant"
+                  ? m.content
+                    ? <MessageResponse>{m.content}</MessageResponse>
+                    : <span aria-label="Generating response" className="inline-flex items-center gap-2 text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" />Preparing your answer</span>
+                  : <p className="whitespace-pre-wrap">{m.content}</p>}
+              </MessageContent>
+              {m.role === "assistant" && m.content && (
+                <MessageActions>
+                  <MessageAction
+                    aria-label={copiedIdx === i ? "Copied" : "Copy response"}
+                    onClick={() => copy(m.content, i)}
+                    tooltip={copiedIdx === i ? "Copied" : "Copy response"}
+                  >
+                    {copiedIdx === i ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                  </MessageAction>
+                </MessageActions>
+              )}
+            </Message>
           ))}
-
+          {safetyBlockMessage && (
+            <div role="alert" className="flex items-start gap-3 border-y border-destructive/30 py-4 text-sm">
+              <ShieldAlert className="mt-0.5 h-5 w-5 shrink-0 text-destructive" />
+              <p className="text-foreground">{safetyBlockMessage}</p>
+            </div>
+          )}
           {paywall && (
-            <div className="rounded-xl border border-accent/30 bg-accent-soft p-5 max-w-2xl mx-auto">
-              <div className="flex items-start gap-3">
-                <AlertCircle className="h-5 w-5 text-accent shrink-0 mt-0.5" />
-                <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-primary">{paywall}</p>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Upgrade to Professional for unlimited queries, faster responses, and priority access.
-                  </p>
-                  <Button asChild size="sm" className="mt-3">
-                    <a href="/#pricing">View pricing</a>
-                  </Button>
-                </div>
+            <div className="flex items-start gap-3 border-y border-accent/30 py-5">
+              <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-accent" />
+              <div className="min-w-0 flex-1">
+                <p className="font-semibold text-primary">{paywall}</p>
+                <p className="mt-1 text-sm text-muted-foreground">Upgrade to Professional for unlimited queries, faster responses, and priority access.</p>
+                <Button asChild size="sm" className="mt-3"><a href="/#pricing">View pricing</a></Button>
               </div>
             </div>
           )}
-        </div>
-      </div>
+        </ConversationContent>
+        <ConversationScrollButton />
+      </Conversation>
 
       {/* Composer */}
       <div className="border-t border-border bg-card px-4 md:px-6 py-3 md:py-4">
@@ -459,20 +424,24 @@ export const ChatInterface = ({
               )}
             </div>
           )}
-          <div className="relative flex items-end gap-2 rounded-xl border border-border bg-background p-2 focus-within:border-accent transition-base">
-            <Textarea
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={onKey}
-              placeholder={placeholder}
+          <PromptInput
+            className="rounded-md border border-border bg-background transition-base focus-within:border-accent"
+            onSubmit={({ text }) => send(text)}
+          >
+            <PromptInputTextarea
+              aria-label={`Message ${title}`}
               disabled={busy || !!paywall}
-              className="min-h-[48px] max-h-40 border-0 bg-transparent resize-none focus-visible:ring-0 focus-visible:ring-offset-0 px-2 py-2"
-              rows={1}
+              placeholder={placeholder}
+              className="min-h-14 max-h-40 px-3 py-3 text-sm"
             />
-            <Button onClick={send} disabled={busy || !input.trim() || !!paywall} size="icon" className="shrink-0 h-9 w-9">
-              {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-            </Button>
-          </div>
+            <PromptInputFooter className="justify-end border-t-0 px-2 pb-2">
+              <PromptInputSubmit
+                aria-label="Send message"
+                disabled={busy || !!paywall}
+                status={busy ? "streaming" : "ready"}
+              />
+            </PromptInputFooter>
+          </PromptInput>
           <p className="mt-2 text-[11px] text-muted-foreground text-center">
             Always verify AI output before client use. Press Enter to send, Shift+Enter for newline.
           </p>
